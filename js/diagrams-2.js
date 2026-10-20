@@ -76,7 +76,7 @@ Object.assign(DIAGRAMS, {
     p: { 'c*': 'rw', 1: 'rc', x1: [3, 10], 2: 'lw', x2: [-6, 13] },
     s: [
       ['Coach passes as the defender closes out. Shooter stays low, ready to catch and shoot.', [['p', 'c', '1'], ['c', 'x1', [17.5, 5.5]]]],
-      ['Shot there in rhythm? Shoot. If not, shot-fake (or fake a dribble), then shoot.', [['c', 'x1', [20, 7.5]], ['d', '1', [17, 6]], '|', ['sh', '1']]],
+      ['Shot there in rhythm? Shoot. If not, shot-fake (or fake a dribble), then shoot.', [['c', 'x1', [21, 6.5], [24.5, 4]], '|', ['sh', '1']]],
       ['Weak-side offense and defense battle for the rebound.', [['c', '2', [-4.5, 9.5]], ['c', 'x2', [-2, 7]], '|', ['r', 'x2']]],
     ],
   },
@@ -120,7 +120,8 @@ Object.assign(DIAGRAMS, {
       ['No ball first: the defender slides the zig-zag with a drop step at every turn.', [['c', 'x1', [-9, 18], [-22, 30], [-10, 42]]]],
       ['Reset. Now the offense dribbles the zig-zag at half speed.', [['m', 'x1', [-19, 6.5]]]],
       ['Defender stays nose on the ball and drop steps on every change of direction.',
-        [['d', '1', [-11, 14], [-21, 26], [-11, 38], [-20, 49]], ['c', 'x1', [-10, 18], [-22, 30], [-10, 42], [-21, 54]]]],
+        [['d', '1', [-11, 14]], ['c', 'x1', [-10, 18]], '|', ['d', '1', [-21, 26]], ['c', 'x1', [-22, 30]], '|',
+          ['d', '1', [-11, 38]], ['c', 'x1', [-10, 42]], '|', ['d', '1', [-20, 49]], ['c', 'x1', [-21, 54]]]],
     ],
   },
   'PD-03': {
@@ -192,8 +193,10 @@ Object.assign(DIAGRAMS, {
     court: 'f',
     p: { '1*': [-10, 2], x1: [-10, 7] },
     s: [
-      ['1v1 zig-zag up the floor. The defender turns the ball handler at every sideline.', [['d', '1', [-20, 14], [-6, 28], [-18, 42]], ['c', 'x1', [-19, 18], [-5, 32], [-16, 46.5]]]],
-      ['Past half court it\'s live: play 1v1 to a score.', [['d', '1', [-8, 60], [-5, 80.5]], ['c', 'x1', [-6, 64], [-3, 86]], '|', ['sh', '1']]],
+      ['1v1 zig-zag up the floor. The defender turns the ball handler at every sideline.',
+        [['d', '1', [-20, 14]], ['c', 'x1', [-19, 18]], '|', ['d', '1', [-6, 28]], ['c', 'x1', [-5, 32]], '|', ['d', '1', [-18, 42]], ['c', 'x1', [-16, 46.5]]]],
+      ['Past half court it\'s live: play 1v1 to a score.',
+        [['d', '1', [-8, 60]], ['c', 'x1', [-6, 64]], '|', ['d', '1', [-5, 80.5]], ['c', 'x1', [-3, 86]], '|', ['sh', '1']]],
       ['Progress to 2v2 (add wing defense), then 3v3. Play each to a score.', []],
     ],
   },
@@ -201,7 +204,7 @@ Object.assign(DIAGRAMS, {
     p: { '1*': [17, 22], x1: [1, 12] },
     z: [[[2.5, 7.5], [9, 13], 'mat']],
     s: [
-      ['Offense drives. Defender beats them to the spot: feet set, chest square.', [['d', '1', [9.5, 14.5]], ['c', 'x1', [5.5, 10.5]]]],
+      ['Offense walks in with the ball. Defender beats them to the spot: feet set, chest square.', [['d', '1', [9.5, 14.5]], ['c', 'x1', [5.5, 10.5]]]],
       ['On contact: sit down, roll onto your backside, chin tucked.', [['d', '1', [7.5, 12.5]], ['c', 'x1', [4.5, 9]]]],
       ['Progress from walking to jogging into contact.', []],
     ],
@@ -294,7 +297,8 @@ Object.assign(DIAGRAMS, {
     p: { '2*': 'rw', 5: 'rb', x5: [9.5, 11] },
     s: [
       ['Defender fronts from the top side. Post seals: wide base, arm bar, sit on the defender\'s leg.', [['c', '5', [8.3, 8.3]], ['c', 'x5', [9.6, 10.9]]]],
-      ['Wing enters the ball away from the defender. Live on the catch.', [['p', '2', '5'], ['c', 'x5', [8, 10.5]]]],
+      ['Wing dribbles lower to change the angle, then enters the ball away from the defender. Live on the catch.',
+        [['d', '2', [19, 12]], '|', ['c', 'x5', [8, 10.5]], ['p', '2', '5']]],
       ['Score with a move against the live defender.', [['c', '5', [3.5, 6.5]], ['c', 'x5', [5.5, 8.5]], '|', ['sh', '5']]],
     ],
   },
@@ -303,14 +307,15 @@ Object.assign(DIAGRAMS, {
     s: [
       ['Coach passes to either post. The defender is live on the pass.', [['p', 'c', '5'], ['c', 'x', [5, 11]]]],
       ['Post scores quickly, before the help arrives.', [['c', '5', [4, 6.5]], ['c', 'x', [3, 9]], '|', ['sh', '5']]],
-      ['Next rep the coach picks the other side.', [['p', 'c', '4'], ['c', 'x', [-5, 11]], '|', ['c', '4', [-4, 6.5]], '|', ['sh', '4']]],
+      ['Next rep the coach picks the other side.',
+        [['m', '5', 'rb'], ['m', 'x', [0, 19.5]], '|', ['p', 'c', '4'], ['c', 'x', [-5, 11]], '|', ['c', '4', [-4, 6.5]], '|', ['sh', '4']]],
     ],
   },
   'PO-04': {
-    p: { '2*': 'rw', 5: 'rb', 1: 'top', x5: [9, 10.5], x1: [-1.5, 23.5] },
+    p: { '2*': 'rw', 5: 'rb', 1: 'top', x5: [6, 10.5], x1: [-1.5, 23.5] },
     s: [
       ['Wing enters to the post. Perimeter players relocate after the entry.', [['p', '2', '5'], '|', ['c', '2', [20, 9]], ['c', '1', [-8, 25]], ['c', 'x1', [-6, 22]]]],
-      ['Guarded 1v1: score with a move. A guard digs or doubles: read it.', [['c', 'x1', [4.5, 12.5]]]],
+      ['Guarded 1v1: score with a move. A guard digs or doubles: read it.', [['c', 'x1', [4.5, 12.5]], ['c', '1', 'lw']]],
       ['Kick out to the open perimeter player for a catch-and-shoot.', [['p', '5', '1'], '|', ['sh', '1']]],
     ],
   },

@@ -20,11 +20,11 @@ Object.assign(DIAGRAMS, {
     ],
   },
   'SS-03': {
-    p: { 'c*': [7, 28], 1: 'rc', x1: [18, 5.5], 2: 'rb', x2: [9.5, 10.5] },
+    p: { 'c*': [7, 28], 1: [18, 13], x1: [14, 11], 2: 'rb', x2: [9.5, 10.5] },
     n: [['8 seconds to score', [-12, 30]]],
     s: [
-      ['Post sets the hammer screen on the corner defender.', [['s', '2', [16, 7]], ['c', 'x2', [12.5, 9.5]]]],
-      ['Corner fades to the wing for the catch-and-shoot 3.', [['c', '1', [19.5, 15]], ['c', 'x1', [17.5, 8]], ['p', 'c', '1'], '|', ['sh', '1']]],
+      ['Post sets the hammer screen on the wing\'s defender.', [['s', '2', [16.5, 8]], ['c', 'x2', [12.5, 6]]]],
+      ['Wing fades to the corner off the hammer for the catch-and-shoot 3.', [['c', '1', 'rc'], ['c', 'x1', [15, 9.5]], ['p', 'c', '1'], '|', ['sh', '1']]],
       ['Other reads: curl, slip to the rim, or post-up entry. Score = go to defense. Stop or rebound = defense stays.', [['c', '2', [5, 7.5]], ['c', 'x2', [7.5, 8.5]], '|', ['r', 'x2']]],
     ],
   },
@@ -32,9 +32,9 @@ Object.assign(DIAGRAMS, {
     p: { '1*': 'top', 2: 'rw', 3: 'lw', x1: [0, 24.5], x2: [14.5, 16], x3: [-11, 15] },
     s: [
       ['Top passes to the wing. Defense jumps to the ball.', [['p', '1', '2'], ['c', 'x2', [15.5, 17]], ['c', 'x1', [2, 22]], ['c', 'x3', [-9, 14.5]]]],
-      ['Passer screens away for the opposite wing (down screen or back screen).', [['s', '1', [-11, 18]], ['c', 'x1', [-8, 21]]]],
+      ['Passer screens away for the opposite wing (hammer or back screen).', [['s', '1', [-12.5, 19.5]], ['c', 'x1', [-8, 21]]]],
       ['Cutter comes off the screen for the next pass. Screen away after every pass. Play it live.',
-        [['c', '3', [-15, 24], [-6, 27]], ['c', 'x3', [-9.5, 16.5]], ['p', '2', '3'], '|', ['c', '1', [-8, 11]], ['c', 'x1', [-6, 15]]]],
+        [['c', '3', [-15, 21.5], [-6, 27]], ['c', 'x3', [-10, 17]], ['p', '2', '3'], '|', ['c', '1', [-8, 11]], ['c', 'x1', [-6, 15]]]],
     ],
   },
   'SS-05': {
@@ -73,8 +73,8 @@ Object.assign(DIAGRAMS, {
     n: [['drop zone', [-2, 23]]],
     s: [
       ['Slot dribbles to the drop zone at the free-throw line.', [['d', '1', [3.5, 20]]]],
-      ['Wing starts to loop up, then back-cuts. Bounce pass for the layup.', [['c', '2', [18.5, 23.5]], '|', ['c', '2', [11, 10], [4, 7]], ['p', '1', '2']]],
-      ['Progression: the back-cutter drives and kicks to the opposite corner for the shot.', [['d', '2', [0, 9]], '|', ['p', '2', '3'], '|', ['sh', '3']]],
+      ['Wing starts to loop up, then back-cuts. Bounce pass for the layup.', [['c', '2', [18.5, 23.5]], '|', ['c', '2', [11, 10], [7, 10]], ['p', '1', '2']]],
+      ['Progression: the back-cutter drives and kicks to the opposite corner for the shot.', [['d', '2', [2, 7.5]], '|', ['p', '2', '3'], '|', ['sh', '3']]],
     ],
   },
   'SS-09': {
@@ -91,7 +91,7 @@ Object.assign(DIAGRAMS, {
     n: [['3v0: hedge is imaginary', [12, 34]]],
     s: [
       ['Screener sets the ball screen. The hedge jumps out and takes the guard.', [['s', '5', [-2.2, 26]]]],
-      ['Guard turns the corner, escapes the hedge, and passes to the wing at the 45.', [['d', '1', [-5.5, 29.5], [-9, 27]], '|', ['p', '1', '2']]],
+      ['Guard comes off the screen and retreat-dribbles so the hedge commits, then passes to the wing at the 45.', [['d', '1', [-5.5, 29.5], [-8, 31]], '|', ['p', '1', '2']]],
       ['Option 1: the screener rolls long to the rim and the wing hits the long roll.', [['c', '5', [-5, 15], [-2.5, 8]], ['p', '2', '5'], '|', ['sh', '5']]],
       ['Option 2: guard hits the short roll at the free-throw line; the short roll finds the open perimeter player.', []],
     ],
@@ -161,12 +161,13 @@ Object.assign(DIAGRAMS, {
     court: 'f',
     p: { '1*': [0, 30], 2: [-15, 32], 3: [15, 32], x1: [0, 70], x2: [0, 82], x3: [-9, 3], x4: [9, 3] },
     s: [
-      ['Three attack two. The top defender stops the ball; make the extra pass.',
-        [['d', '1', [0, 58]], ['c', '2', [-17, 66]], ['c', '3', [17, 66]], ['c', 'x1', [0, 63]], '|', ['p', '1', '3'], ['c', 'x2', [9, 78]], '|', ['sh', '3']]],
+      ['Middle stops at the free-throw line, wings wide. Top defender stops the ball; bottom takes the first pass.',
+        [['d', '1', [0, 71]], ['c', '2', [-17, 77]], ['c', '3', [17, 77]], ['c', 'x1', [0, 74.5]], '|', ['p', '1', '3'], ['c', 'x2', [9, 78]], '|', ['sh', '3']]],
       ['Possession over: the two defenders go the other way 2v1 against the shooter. The other two attackers become the next defenders.',
         [['c', 'x2', [3, 84]], ['r', 'x2'], '|', ['c', 'x1', [-14, 62]], ['p', 'x2', 'x1'], ['c', '1', [0, 70]], ['c', '2', [0, 82]], '|',
           ['d', 'x1', [-10, 30]], ['c', 'x2', [12, 32]], ['c', '3', [2, 36]]]],
-      ['Finish the 2v1. Then the next 3 attack the two defenders waiting at that end.', [['d', 'x1', [-6, 14]], ['c', '3', [-2, 12]], '|', ['p', 'x1', 'x2'], '|', ['sh', 'x2']]],
+      ['Finish the 2v1: attack the rim, make the defender commit. Then the next 3 attack the two defenders waiting at that end.',
+        [['d', 'x1', [-6, 14]], ['c', 'x2', [7, 11]], ['c', '3', [-3.5, 9.5]], '|', ['p', 'x1', 'x2'], '|', ['L', 'x2', 'rim+1.5,1.5']]],
     ],
   },
   'TR-06': {
@@ -191,9 +192,9 @@ Object.assign(DIAGRAMS, {
     n: [['X team waits on the sideline', [0, 52]]],
     s: [
       ['2v1: attack the lone defender for a layup.', [['d', '1', [-3, 64]], ['c', '2', [10, 70]], ['c', 'x1', [-1, 72]], '|', ['p', '1', '2'], '|', ['L', '2', [4, 85]]]],
-      ['Defender rebounds and outlets to teammates sprinting in from the sideline. The 2 sprint back: 3v2.',
+      ['Defender rebounds and outlets to teammates sprinting in from the sideline. The two attackers sprint back: 3v2.',
         [['c', 'x1', [0, 84]], ['r', 'x1'], '|', ['c', 'x2', [-18, 64]], ['c', 'x3', [17, 62]], ['p', 'x1', 'x2'], ['c', '1', [-3, 44]], ['c', '2', [5, 34]]]],
-      ['Defense rebounds and pushes: 4v3, then 5v4, then 5v5. Restart with the other team. Losers run or do push-ups.',
+      ['Play out the 3v2. Then the defense rebounds and pushes 4v3, 5v4, 5v5. Restart with the other team; losers run or do push-ups.',
         [['d', 'x2', [-5, 34]], ['c', 'x3', [15, 28]], ['c', 'x1', [-15, 38]], ['c', '1', [-3, 22]], ['c', '2', [4, 12]]]],
     ],
   },
@@ -216,7 +217,7 @@ Object.assign(DIAGRAMS, {
       ['Coach calls one or two numbers and passes to the other team.', [['p', 'c', 'x1']]],
       ['Called players touch the baseline before getting back: 5v4 or 5v3 the other way.',
         [['c', '3', [-12, 1]], ['c', '5', [-4, 1]], ['d', 'x1', [-1, 46], [-2, 62]], ['c', 'x2', [16, 44], [17, 70]], ['c', 'x3', [-16, 44], [-17, 70]], ['c', 'x4', [7, 48], [8, 76]], ['c', 'x5', [-5, 50], [-4, 80]],
-          ['c', '1', [2, 44], [1, 66]], ['c', '2', [12, 46], [9, 76]], ['c', '4', [-3, 46], [-1, 82]]]],
+          ['c', '1', [2, 44], [1, 66]], ['c', '2', [12, 46], [5, 80]], ['c', '4', [-3, 46], [-1, 82]]]],
       ['Defense sprints to the paint, stops the ball, and survives until help arrives.',
         [['c', '3', [-14, 40], [-12, 72]], ['c', '5', [-4, 44], [-3, 70]], ['p', 'x1', 'x3'], '|', ['sh', 'x3']]],
     ],

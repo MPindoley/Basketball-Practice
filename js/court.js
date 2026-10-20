@@ -122,8 +122,9 @@ const Court = (() => {
             const dest = pos[to], recv = mover(to), mine = mover(who);
             // Lead the receiver: release so the ball lands as they arrive, from wherever the passer is by then.
             let delay = Math.max(arrive[who] || 0, recv ? recv.dur - flight(dist(b0.pos[who], dest)) : 0);
-            const from = mine ? at(mine.path, mine.path.len * ease(Math.min(1, delay / mine.dur))) : b0.pos[who];
-            const dur = flight(dist(from, dest));
+            let from = mine ? at(mine.path, mine.path.len * ease(Math.min(1, delay / mine.dur))) : b0.pos[who];
+            let dur = flight(dist(from, dest));
+            if (recv && delay + dur < recv.dur) { delay = recv.dur - dur; from = mine ? at(mine.path, mine.path.len * ease(Math.min(1, delay / mine.dur))) : from; dur = flight(dist(from, dest)); }
             acts.push({ t, who, to, ball, path: measure([from, dest]), dur, delay });
             arrive[to] = delay + dur;
             balls[ball] = to;
@@ -134,7 +135,8 @@ const Court = (() => {
             acts.push({ t: 'sh', who, ball, path: arc(from, rim, from[0] > 0 ? 0.18 : -0.18), dur: 0.8, delay: Math.max(m ? m.dur : 0, arrive[who] || 0) });
             balls[ball] = '@rim';
           } else if (t === 'r') {
-            const ball = Object.keys(balls).find(k => balls[k] === '@rim') || 'b' + nb++;
+            const live = acts.find(a => a.t === 'sh' && balls[a.ball] === '@rim');
+            const ball = live ? live.ball : Object.keys(balls).find(k => balls[k] === '@rim') || 'b' + nb++;
             const rim = nearRim(pos[who], full), m = mover(who);
             const shot = acts.find(a => a.t === 'sh' && a.ball === ball);
             const delay = Math.max(m ? m.dur - 0.7 : 0, shot ? shot.delay + shot.dur : 0);
@@ -180,7 +182,8 @@ const Court = (() => {
         if (a.t === 'p' || a.t === 'sh' || a.t === 'r') {
           if (p > 0 && p < 1) {
             const q = at(a.path, a.path.len * p);
-            ballPos[a.ball] = a.t === 'p' ? [q[0] + off[0], q[1] + off[1]] : q;
+            const w = a.t === 'p' ? 1 : a.t === 'sh' ? 1 - p : p; // shots leave the hand, rebounds end in it
+            ballPos[a.ball] = [q[0] + off[0] * w, q[1] + off[1] * w];
             ballScale[a.ball] = a.t === 'sh' ? 1 + Math.sin(p * Math.PI) * 0.7 : 1;
           } else if (p >= 1) holders[a.ball] = a.t === 'sh' ? '@rim' : a.t === 'p' ? a.to : a.who;
         }
@@ -311,7 +314,7 @@ const Court = (() => {
     root.querySelectorAll('.pl').forEach(g => { players[g.dataset.id] = g; });
     root.querySelectorAll('.ball').forEach(g => { ballsEl[g.dataset.b] = g; });
     const arrowsG = root.querySelector('.arrows');
-    let si = 0, t = 0, raf = 0, playing = false, hold = 0, last = 0;
+    let si = 0, t = 0, raf = 0, playing = false, hold = 0, last = 0, dead = false;
     const speed = () => (opts.speed ? opts.speed() : 1);
 
     function paint() {
@@ -360,9 +363,9 @@ const Court = (() => {
       }
       raf = requestAnimationFrame(tick);
     }
-    function play() {
-      if (!model.steps.length) return;
-      if (si === model.steps.length - 1 && t >= model.steps[si].dur) go(0);
+    function play(fresh) {
+      if (dead || !model.steps.length) return;
+      if (!fresh && si === model.steps.length - 1 && t >= model.steps[si].dur) go(0);
       playing = true; hold = t === 0 ? -0.4 : 0; last = performance.now();
       cancelAnimationFrame(raf); raf = requestAnimationFrame(tick);
       opts.onStep && opts.onStep(si, true);
@@ -373,9 +376,9 @@ const Court = (() => {
     }
     go(0);
     return {
-      model, play, pause: stop, go: i => { const was = playing; stop(); go(i); if (was) play(); },
+      model, play, pause: stop, go: i => { const was = playing; stop(); go(i); if (was) play(true); },
       get playing() { return playing; }, get step() { return si; },
-      destroy() { cancelAnimationFrame(raf); },
+      destroy() { dead = true; playing = false; cancelAnimationFrame(raf); },
     };
   }
 

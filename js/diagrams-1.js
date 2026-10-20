@@ -146,7 +146,8 @@ Object.assign(DIAGRAMS, {
     s: [
       ['Round 1: defender presses with hands behind the back. Ball handler attacks.', [['d', '1', [-15, 14]], ['c', 'x1', [-14, 18.5]]]],
       ['Change direction to shake the pressure. Get across half court in 10 seconds.',
-        [['d', '1', [-5, 26], [-9, 38], [-5, 50]], ['c', 'x1', [-4, 30], [-8, 42], [-3.5, 55]]]],
+        [['d', '1', [-5, 26]], ['c', 'x1', [-4, 30]], '|', ['d', '1', [-9, 38]], ['c', 'x1', [-8, 42]], '|',
+          ['d', '1', [-5, 50]], ['c', 'x1', [-3.5, 55]]]],
       ['Round 2 is live: the defender can go for the steal.', []],
     ],
   },
@@ -165,8 +166,8 @@ Object.assign(DIAGRAMS, {
   'PA-02': {
     p: { '1*': [-14, 22], x: [-3, 22], 2: [14, 22] },
     s: [
-      ['Defender closes out on the passer. The passer waits for the defender to arrive.', [['c', 'x', [-11, 22]]]],
-      ['Pivot, fake, and pass around the defender to the far partner.', [['p', '1', '2']]],
+      ['Defender closes out on the passer. The passer waits for the defender to arrive.', [['c', 'x', [-11, 20.5]]]],
+      ['Pivot, fake, and pass around the defender to the far partner.', [['c', '1', [-14.5, 24]], '|', ['p', '1', '2']]],
       ['Passer becomes the defender and closes out on the receiver. Old defender takes the open spot.',
         [['c', '1', [0, 24.5], [10.5, 22]], ['c', 'x', [-8, 19.5], [-14, 22]]]],
     ],
@@ -188,7 +189,7 @@ Object.assign(DIAGRAMS, {
     s: [
       ['Sprint the floor passing back and forth. No dribbles.',
         [['c', '1', [-8, 20]], ['c', '2', [7, 24]], ['p', '1', '2'], '|', ['c', '1', [-8, 44]], ['c', '2', [7, 46]], ['p', '2', '1'], '|',
-          ['c', '1', [-8, 66]], ['c', '2', [7, 68]], ['p', '1', '2']]],
+          ['c', '1', [-8, 70]], ['c', '2', [5, 80]], ['p', '1', '2']]],
       ['Finish with a layup, then come back up the other side.', [['c', '2', [2.5, 85]], ['sh', '2'], ['c', '1', [-4, 80]], '|', ['r', '1']]],
     ],
   },
@@ -205,7 +206,8 @@ Object.assign(DIAGRAMS, {
     p: { '1*': 'rw', 5: 'rb', x5: [9, 11] },
     s: [
       ['Defender plays 3/4 on the high side. Passer fakes high to move the defender.', [['c', 'x5', [10, 11.5]]]],
-      ['Post seals with a wide base. Bounce or overhead pass away from the defense, to the open hand.', [['c', '5', [7, 7]], ['p', '1', '5']]],
+      ['Post seals into the defender. Passer dribbles lower to change the angle, then passes away from the defense to the open hand.',
+        [['d', '1', [19, 12]], '|', ['c', '5', [8, 8.5]], ['p', '1', '5']]],
       ['Post catches with two hands, chins it, and scores. Rotate passer, post, defender.', [['c', '5', [4, 6.5]], ['sh', '5']]],
     ],
   },
@@ -213,7 +215,7 @@ Object.assign(DIAGRAMS, {
     p: { 'c*': [0, 28], 2: 'rw', x2: [14.5, 19.5] },
     s: [
       ['V-cut: walk your defender in toward the block. (L-cut: walk up the lane line instead.)', [['c', '2', [10.5, 10]], ['c', 'x2', [9, 13]]]],
-      ['Plant and sprint out to the wing. Show a target hand.', [['c', '2', [18.5, 20]], ['c', 'x2', [14.5, 20.5]], ['p', 'c', '2']]],
+      ['Plant and sprint out to the wing. Show a target hand.', [['c', '2', [18.5, 20]], ['c', 'x2', [12.5, 18]], ['p', 'c', '2']]],
       ['Catch in triple threat, rip through, and attack the rim with 2 dribbles.', [['L', '2', [12, 10], 'rim+1.5,2'], ['c', 'x2', [8, 11.5]]]],
     ],
   },
@@ -221,7 +223,7 @@ Object.assign(DIAGRAMS, {
     p: { '3*': [6, 40], 1: [18, 21], c: [15.5, 25] },
     n: [['Same on the left with 2 and 4', [-11, 34]]],
     s: [
-      ['Receiver steps across the coach\'s feet and seals on the hip, like a post-up.', [['c', '1', [13.5, 28]]]],
+      ['Receiver steps across the coach\'s feet and seals on the hip, like a post-up.', [['c', '1', [12.5, 23.5], [13.5, 28]]]],
       ['Passer throws to the outside hand. Release to the ball while it\'s in the air.', [['c', '1', [10.5, 33]], ['p', '3', '1']]],
       ['Face up, jab, rip through, drive, and finish with a two-foot jump stop at the rim.', [['L', '1', [6, 16], 'rim+1.5,2.5'], ['c', 'c', [11, 24]]]],
     ],

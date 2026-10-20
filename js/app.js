@@ -55,7 +55,7 @@
   const today = () => { const d = new Date(); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; };
   const toMin = hhmm => { const [h, m] = (hhmm || '15:30').split(':').map(Number); return h * 60 + m; };
   const clock = (min, ampm) => {
-    const h = Math.floor(min / 60) % 24, m = Math.round(min % 60);
+    const t = Math.round(min), h = Math.floor(t / 60) % 24, m = t % 60;
     return `${((h + 11) % 12) + 1}:${pad(m)}${ampm ? (h < 12 ? ' AM' : ' PM') : ''}`;
   };
   const prettyDate = s => {
@@ -66,7 +66,7 @@
   const uid = () => Math.random().toString(36).slice(2, 9);
 
   // ---------- state ----------
-  const KEY = 'practicebook.v1', RKEY = 'practicebook.run';
+  const KEY = 'practicebook.v1', RKEY = 'practicebook.run', SKEY = 'practicebook.synced';
   const read = k => { try { return JSON.parse(localStorage.getItem(k)); } catch (e) { return null; } };
   const write = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* private mode: keep going in memory */ } };
 
@@ -97,6 +97,10 @@
   }
 
   // ---------- sync through the artifact's per-person store (claude.ai); local-only elsewhere ----------
+  const merge = (to, from) => ['plans', 'custom', 'notes', 'installed'].forEach(k => {
+    to[k] = to[k] || {};
+    for (const id in from[k] || {}) if (!(id in to[k])) to[k][id] = from[k][id];
+  });
   const sync = {
     ref: null, on: false, timer: 0, chain: Promise.resolve(), first: true,
     async init() {
@@ -106,20 +110,23 @@
       if (!id) return;
       this.ref = db.doc('data/users/' + id + '/state');
       this.ref.onSnapshot(snap => {
-        if (snap.metadata.hasPendingWrites) return;
+        if (snap.metadata.hasPendingWrites || snap.metadata.fromCache) return;
         this.on = true; paintSync();
-        const remote = snap.exists ? snap.data().state : null;
+        const remote = snap.exists ? JSON.parse(JSON.stringify(snap.data().state)) : null;
         const first = this.first; this.first = false;
         if (!remote) return this.push();
+        // only edits made since the last sync get merged, so plans deleted elsewhere stay deleted
+        const dirty = first && state.updated > (read(SKEY) || 0);
         if (remote.updated > state.updated) {
-          const mine = first && state.updated > 0 ? state.plans : {};
-          state = JSON.parse(JSON.stringify(remote));
-          for (const k in mine) if (!state.plans[k]) state.plans[k] = mine[k];
-          write(KEY, state); render(); refreshDetail();
+          const mine = dirty ? state : null;
+          state = remote;
+          if (mine) { merge(state, mine); save(); } else { write(KEY, state); render(); }
+          refreshDetail();
         } else if (remote.updated < state.updated) {
-          if (first) for (const k in remote.plans || {}) if (!state.plans[k]) state.plans[k] = remote.plans[k];
+          if (dirty) merge(state, remote);
           this.push();
         }
+        if (remote.updated === state.updated) write(SKEY, state.updated);
       }, () => { this.on = false; paintSync(); });
     },
     push() {
@@ -128,7 +135,8 @@
       this.timer = setTimeout(() => {
         const body = { state: JSON.parse(JSON.stringify(state)) };
         this.chain = this.chain.then(() => this.ref.set(body)).catch(e => {
-          if (e && e.code === 'quota_exceeded') toast('Cloud save is full. Delete old plans or sketches.');
+          this.on = false; paintSync();
+          toast(e && (e.code === 'quota_exceeded' || e.code === 'invalid_argument') ? 'Cloud save is full. Delete old plans or sketches.' : 'Could not save to your account. Changes are on this device.');
         });
       }, 1200);
     },
@@ -199,6 +207,7 @@
     let v = h, c = null;
     if (h.startsWith('cat-')) { v = 'drills'; c = h.slice(4); }
     if (!['plan', 'drills', 'run', 'board', 'notes'].includes(v)) v = 'plan';
+    if ('#' + (h || 'plan') !== lastHash) { closePicker(); closeSheet(); $('#drillform') && $('#drillform').remove(); }
     lastHash = '#' + (h || 'plan');
     if (v === view && c === catOpen && main.childElementCount) return;
     view = v; catOpen = c; toolsOpen = -1;
@@ -388,8 +397,9 @@
     const block = slot >= 0 && p.items[slot].slot;
     if (slot >= 0) p.items[slot] = { d: id, min: d.min };
     else p.items.push({ d: id, min: d.min });
-    save(view !== 'drills' || !libQuery);
-    if (view === 'drills' && libQuery) $('#libres').innerHTML = results(false);
+    const inSearch = view === 'drills' && libQuery && !catOpen;
+    save(!inSearch);
+    if (inSearch) $('#libres').innerHTML = results(false);
     toast(block ? `${d.name} fills the ${block} block` : `Added to ${p.name}`);
   }
 
@@ -544,11 +554,12 @@
           <h1 style="font-size:40px;text-transform:uppercase;margin:6px 0 8px">${esc(plan.name)}</h1>
           <p class="muted" style="margin:0 0 6px">${items.length} drills · ${times[times.length - 1] - toMin(plan.start)} minutes${plan.focus ? ' · ' + esc(plan.focus) : ''}</p>
           ${plan.message ? `<p style="font-family:var(--marker);font-size:22px;margin:10px 0 0;color:var(--off)">“${esc(plan.message)}”</p>` : ''}
-          <ul style="margin:18px 0 0;padding:0;list-style:none;display:grid;gap:6px">${plan.items.map((it, i) => it.d ? `<li class="row" style="gap:12px;flex-wrap:nowrap"><span class="num" style="font:700 16px var(--display);color:var(--muted);width:44px">${clock(times[i])}</span><span class="cat-code" style="${gc(drill(it.d).cat)}">${drill(it.d).cat}</span><span style="flex:1;min-width:0">${esc(drill(it.d).name)}</span><span class="num muted">${it.min}′</span></li>` : '').join('')}</ul>
+          <ul style="margin:18px 0 0;padding:0;list-style:none;display:grid;gap:6px">${plan.items.map((it, i) => it.d && drill(it.d) ? `<li class="row" style="gap:12px;flex-wrap:nowrap"><span class="num" style="font:700 16px var(--display);color:var(--muted);width:44px">${clock(times[i])}</span><span class="cat-code" style="${gc(drill(it.d).cat)}">${drill(it.d).cat}</span><span style="flex:1;min-width:0">${esc(drill(it.d).name)}</span><span class="num muted">${it.min}′</span></li>` : '').join('')}</ul>
           <button class="btn primary big block" style="margin-top:22px" data-act="startrun" ${items.length ? '' : 'disabled'}>${I.play}Start practice</button>
           <p class="muted" style="font-size:14px;margin:12px 0 0">A beep at 1 minute left and a triple beep at time. The screen stays awake while the timer runs.</p>
         </section>`;
     }
+    run.i = Math.min(run.i, runItems().length - 1);
     if (run.done) {
       const mins = Math.round((run.done - run.t0) / 60000);
       return `<section class="card empty" style="padding:40px 20px"><div class="eyebrow">Practice complete</div>
@@ -639,17 +650,18 @@
       return [Math.round(p.x * 10) / 10, Math.round(p.y * 10) / 10];
     };
     svg.addEventListener('pointerdown', e => {
+      if (!e.isPrimary) return;
       e.preventDefault(); svg.setPointerCapture(e.pointerId);
       curS = { c: pen, d: [at(e)] }; sk.strokes.push(curS); paint();
     });
     svg.addEventListener('pointermove', e => {
-      if (!curS) return;
+      if (!curS || !e.isPrimary) return;
       const p = at(e), l = curS.d[curS.d.length - 1];
       if (Math.hypot(p[0] - l[0], p[1] - l[1]) < 0.35) return;
       curS.d.push(p); g.lastChild.setAttribute('d', strokeD(curS.d));
     });
-    const end = () => {
-      if (!curS) return;
+    const end = e => {
+      if (!curS || !e.isPrimary) return;
       if (curS.d.length === 1) { curS.d.push([curS.d[0][0] + 0.05, curS.d[0][1]]); paint(); }
       curS = null; onChange();
     };
@@ -767,7 +779,7 @@
     remove: el => { cur().items.splice(+el.dataset.i, 1); toolsOpen = -1; save(); },
     swap: el => {
       const it = cur().items[+el.dataset.i], d = it.d && drill(it.d);
-      openPicker({ mode: it.d ? 'swap' : 'slot', i: +el.dataset.i, cats: it.d ? (GROUP[d.cat] || { cats: [d.cat] }).cats : it.cats, label: it.d ? 'swap ' + d.name : it.slot });
+      openPicker({ mode: it.d ? 'swap' : 'slot', i: +el.dataset.i, cats: d ? (GROUP[d.cat] || { cats: [d.cat] }).cats : it.cats, label: d ? 'swap ' + d.name : it.slot });
     },
     fill: el => { const it = cur().items[+el.dataset.i]; openPicker({ mode: 'slot', i: +el.dataset.i, cats: it.cats, label: it.slot }); },
     add: () => openPicker({ mode: 'add' }),
@@ -846,7 +858,10 @@
   }
 
   document.addEventListener('click', e => {
-    if (audio && audio.state === 'suspended') audio.resume(); // browsers only allow sound after a tap
+    try { // browsers only allow sound after a tap; only make the context during a run so music isn't interrupted
+      if (run && !run.done) audio = audio || new (window.AudioContext || window.webkitAudioContext)();
+      if (audio && audio.state === 'suspended') audio.resume();
+    } catch (e) { /* no audio on this device */ }
     const el = e.target.closest('[data-act]');
     if (!el || el.disabled) return;
     const fn = ACT[el.dataset.act];

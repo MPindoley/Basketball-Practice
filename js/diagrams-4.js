@@ -79,7 +79,7 @@ Object.assign(DIAGRAMS, {
         [['p', '1', '3'], ['c', 'x3', [19.5, 5.5]], ['c', 'x1', [15, 13]], ['c', 'x2', [-3, 12]], ['c', 'x4', [-5, 6.5]], '|',
           ['p', '3', '1'], ['c', 'x1', [14.8, 16.2]], ['c', 'x3', [18.5, 7]], ['c', 'x2', [-4, 14]], ['c', 'x4', [-7, 6]]]],
       ['Phases 3-5: deny when the dribble is picked up, help and recover on penetration (stop the ball, no trap).',
-        [['d', '1', [10, 11]], ['c', 'x2', [4, 10.5]], ['c', 'x1', [12, 13]], '|', ['p', '1', '2'], ['c', 'x2', [-14.5, 16]], ['c', 'x1', [7, 12]]]],
+        [['d', '1', [15.5, 13], [10, 11]], ['c', 'x2', [4, 10.5]], ['c', 'x1', [12.5, 15]], '|', ['p', '1', '2'], ['c', 'x2', [-14.5, 16]], ['c', 'x1', [7, 12]]]],
       ['Phases 6-8: live shell with cuts and screens, then play to 5 (stop = switch), then 3 teams.', []],
     ],
   },
@@ -110,7 +110,7 @@ Object.assign(DIAGRAMS, {
     p: { '1*': 'ls', 2: 'rs', 3: 'lw', 4: 'rw', x1: [-7.5, 22], x2: [5.5, 23.5], x3: [-14.5, 19.5], x4: [6, 12] },
     s: [
       ['Deny one pass away: hand and foot in the lane, thumb down. The next pass must go away from the basket.', [['c', '2', [11, 31]], ['c', 'x2', [8, 27.5]], ['p', '1', '2']]],
-      ['On the pass, everyone jumps: on-ball pressure, deny, and back-side help.', [['c', 'x2', [9.5, 28.3]], ['c', 'x1', [-3, 20]], ['c', 'x4', [14, 16.5]], ['c', 'x3', [-6, 13]]]],
+      ['On the pass, everyone jumps: on-ball pressure, deny, and back-side help.', [['c', 'x2', [9.5, 28.3]], ['c', 'x1', [-6.5, 25]], ['c', 'x4', [15.5, 21]], ['c', 'x3', [-6, 13]]]],
       ['Offense can cut. No face cuts: beat the cutter to the spot and make them go behind you.', [['c', '3', [-10, 13], [-2, 8]], ['c', 'x3', [-4.5, 11], [0.5, 9.5]]]],
     ],
   },
@@ -126,11 +126,11 @@ Object.assign(DIAGRAMS, {
   'TD-08': {
     court: 'f',
     p: { '1*': [20, 72], x1: [16, 66], x2: [18, 42], x3: [6, 40], 2: [6, 60] },
-    n: [['trap here', [14, 46]]],
+    n: [['trap here', [13, 50]]],
     s: [
-      ['Ball handler dribbles up the sideline. The on-ball defender keeps them there.', [['d', '1', [21.5, 54]], ['c', 'x1', [18, 58.5]]]],
-      ['Trap at the half-court corner: knees and chest, no reaching. Don\'t let the ball split it.', [['c', 'x2', [20, 49.5]], ['c', 'x1', [18, 56.5]]]],
-      ['Add an interceptor who reads the passer\'s eyes and jumps the pass.', [['c', '2', [9, 57]], ['c', 'x3', [10, 51.5]], ['p', '1', '2']]],
+      ['Ball handler dribbles up the sideline. The on-ball defender keeps them there.', [['d', '1', [21.5, 54]], ['c', 'x1', [19, 55]]]],
+      ['Trap at the half-court corner: knees and chest, no reaching. Don\'t let the ball split it.', [['c', 'x2', [20.5, 51]], ['c', 'x1', [18.5, 54.5]]]],
+      ['Add an interceptor who reads the passer\'s eyes and jumps the pass.', [['c', '2', [8, 58]], ['c', 'x3', [11, 56]], ['p', '1', 'x3']]],
     ],
   },
   'TD-09': {
@@ -204,7 +204,7 @@ Object.assign(DIAGRAMS, {
       ['First shooter shoots from the free-throw line. Miss? Chase it and put it back.', [['sh', '1'], '|', ['c', '1', [2.5, 8]], ['r', '1']]],
       ['Second shooter goes right away. Make it before the player ahead of you and they\'re out.', [['sh', '2'], '|', ['sh', '1']]],
       ['Rebound the make, pass to the next in line, and go to the back. Last player standing wins.',
-        [['c', '2', [-1.5, 8]], ['r', '2'], ['m', '1', [-18, 40]], '|', ['p', '2', '3'], '|', ['m', '2', [0, 38.5]]]],
+        [['c', '2', [-1.5, 8]], ['r', '2'], ['m', '1', [-18, 40]], '|', ['p', '2', '3'], '|', ['m', '2', [4.5, 30], [4.5, 37], [0, 39]]]],
     ],
   },
   'CG-02': {
@@ -266,7 +266,7 @@ Object.assign(DIAGRAMS, {
     p: { 'c*': [-5, 28], 'c2*': [-12, 34], 1: 'rc', x: [5, 9] },
     s: [
       ['Defender guards the post. Coach passes to the corner, who drives: rotate over and take the charge.', [['p', 'c', '1'], '|', ['d', '1', [14, 5]], ['c', 'x', [9.5, 5]]]],
-      ['Sprint to the sideline for a diving save on the ball the coach rolls toward the baseline.', [['c', 'x', [12, 9.5], [23, 3.5]], ['g', 'x'], '|', ['p', 'x', 'c']]],
+      ['Sprint to the sideline for a diving save on the ball the coach rolls toward the baseline.', [['c', 'x', [12, 9.5], [23, 3.5]], '|', ['g', 'x'], ['p', 'x', 'c']]],
       ['Then sprint to the opposite sideline to jump and save (or deflect) a ball thrown by a coach.', [['c', 'x', [0, 14], [-23, 14]], ['p', 'c2', 'x']]],
     ],
   },
