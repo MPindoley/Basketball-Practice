@@ -263,7 +263,7 @@ Object.assign(DIAGRAMS, {
   'TR-21': {
     court: 'f',
     p: { 'c*': [0, 12.5], 4: 'lb', 5: 'rb', 2: 'le', 1: 're' },
-    n: [['4 seconds · no dribbles', [9, 47]]],
+    n: [['4 seconds · no dribbles', [12.5, 92.5]]],
     s: [
       ['Coach tosses it off the backboard. 5 rebounds and outlets to 1 on his side; 4 sprints wide up the other sideline.',
         [['sh', 'c'], '|', ['c', '5', [4, 7]], ['r', '5'], ['c', '1', [19, 24]], ['c', '4', [-16, 12], [-22, 26]], '|', ['p', '5', '1']]],
@@ -271,7 +271,7 @@ Object.assign(DIAGRAMS, {
         [['c', '2', [-3, 32], [0, 42]], ['c', '4', [-22, 52]], ['c', '5', [6, 46]], ['p', '1', '2']]],
       ['2 jump-stops and passes ahead to 4 for the layup. Score in 4 seconds with all four inside the far arc, or go again.',
         [['c', '4', [-18, 68], [-7, 78]], ['c', '1', [18, 50], [15, 64]], ['p', '2', '4'], '|',
-          ['L', '4', [-2.5, 85.5]], ['c', '2', [0, 72]], ['c', '1', [13, 78]], ['c', '5', [5, 73]]]],
+          ['c', '4', [-2.5, 85.5]], ['sh', '4'], ['c', '2', [0, 72]], ['c', '1', [13, 78]], ['c', '5', [5, 73]]]],
     ],
   },
   'TR-22': {
@@ -283,7 +283,7 @@ Object.assign(DIAGRAMS, {
       ['Then he sprints back to stop the ball. The chaser runs the whole floor to help or tip it from behind.',
         [['L', '1', [5, 62], [4, 78], [2, 85.5]], ['c', 'x1', [-2, 62], [0.5, 77]], ['c', 'x2', [-4, 60], [-3.5, 80.5]]]],
       ['Score? The scorer sprints back alone to defend the paint. The two defenders inbound and attack 2-on-1 the other way.',
-        [['c', 'x2', [-4, 88], [-2, 93.5]], ['r', 'x2'], ['c', 'x1', [-12, 80]], ['c', '1', [5, 70], [0, 50]], '|',
+        [['c', 'x2', [-4, 88], [-3, 95.5]], ['r', 'x2'], ['c', 'x1', [-12, 80]], ['c', '1', [5, 70], [0, 50]], '|',
           ['p', 'x2', 'x1'], ['c', '1', [0, 40]], '|', ['d', 'x1', [-8, 50], [-6, 24]], ['c', 'x2', [8, 60], [10, 24]], ['c', '1', [0, 12]]]],
       ['Make the defender stop the ball, then pass for the layup. Next three come on with the teams switching roles.',
         [['d', 'x1', [-5, 15]], ['c', 'x2', [7, 12]], ['c', '1', [-3, 11.5]], '|', ['p', 'x1', 'x2'], '|', ['L', 'x2', 'rim+1.5,1.5']]],
@@ -315,7 +315,7 @@ Object.assign(DIAGRAMS, {
         [['p', '1', '2'], ['c', 'x1', [3, 23]], ['c', 'x3', [-9, 13]], ['c', '5', [10, 7.8]], ['c', 'x5', [8.8, 10]]]],
       ['Wing fakes high, pivots to the baseline side, and passes to the target hand. Fumbles, tips, and deflections don\'t count.',
         [['c', 'x2', [15.6, 18.4]], ['c', '2', [18, 15.8]], '|', ['p', '2', '5']]],
-      ['Defender fronts? Post calls "Skip!" Kick it back out, then skip it to the far wing.',
+      ['Post kicks it back out and the defender jumps to a front. Post calls "Skip!" and the wing skips it to the far wing.',
         [['p', '5', '2'], '|', ['c', 'x5', [10.4, 10.7], [11.6, 9.4]], '|', ['p', '2', '3'], ['c', 'x3', [-14.6, 15.6]], ['c', 'x1', [-3, 23]]]],
       ['Post walks him to the middle of the lane, keeping him on his back. Passer fakes, pivots, and hits him deep. 5 clean catches, then new posts.',
         [['c', '5', [6, 7.9], [2.5, 8.2]], ['c', 'x5', [8, 10], [4.8, 9.8]], ['c', 'x3', [-15.4, 18.4]], ['c', '3', [-18, 15.6]], '|', ['p', '3', '5']]],
@@ -325,13 +325,13 @@ Object.assign(DIAGRAMS, {
     p: { 'c*': [18, 19], c2: [-18, 19], 5: 'rb', 4: 'lb' },
     s: [
       ['Ball on the right. 5 goes after 4 and seals him: lead leg between his feet, hips into him. Big target hand, call for it.',
-        [['c', '4', [-3.4, 9.2]], ['c', '5', [-1.2, 10.2]]]],
+        [['c', '4', [-3.8, 9]], ['c', '5', [-1, 10.2]]]],
       ['Coaches reverse the ball. Now 4 goes after 5 and seals him the same way, then calls for it.',
-        [['p', 'c', 'c2'], ['c', '4', [-2, 10.8]], ['c', '5', [0.2, 9.6]]]],
+        [['p', 'c', 'c2'], ['c', '4', [-2.2, 11.2]], ['c', '5', [0.6, 9.8]]]],
       ['Continuous: once he has the seal, the coaches swing it back and forth and he reseals on every pass.',
-        [['p', 'c2', 'c'], ['c', '4', [0.4, 12.4], [2.4, 10.6]], '|', ['p', 'c', 'c2'], ['c', '4', [0.4, 12.4], [-2, 10.8]]]],
+        [['p', 'c2', 'c'], ['c', '4', [0.8, 13], [3.4, 11]], '|', ['p', 'c', 'c2'], ['c', '4', [0.8, 13], [-2.2, 11.2]]]],
       ['After 5 passes, feed the sealed post. He catches and scores with a move.',
-        [['p', 'c2', '4'], '|', ['c', '4', [-2.8, 7.4]], ['c', '5', [-0.4, 8.4]], '|', ['sh', '4']]],
+        [['p', 'c2', '4'], '|', ['c', '4', [-3, 7.6]], ['c', '5', [0, 8.6]], '|', ['sh', '4']]],
     ],
   },
 
@@ -339,18 +339,18 @@ Object.assign(DIAGRAMS, {
   'SP-21': {
     court: 'f',
     p: { '4*': [-5, -1.5], 1: [-9, 12], 5: [4, 14], 2: [15, 22], 3: [-17, 28] },
-    n: [['4.7 seconds on the clock', [12, 4]]],
+    n: [['4.7 sec left', [13, 2]]],
     s: [
       ['They just scored. The inbounder takes it out fast to the point guard. The big sprints ahead; the other two run wide.',
         [['c', '1', [-13, 8]], ['p', '4', '1'], ['c', '5', [2, 30]], ['c', '2', [20, 36]], ['c', '3', [-21, 44]]]],
       ['Point guard pushes it up the floor. The big sets a ball screen near half court; the inbounder sprints in behind as the trailer.',
         [['d', '1', [-8, 26], [-4, 42]], ['s', '5', [-1.5, 47.5]], ['c', '4', [-6, 14], [-5, 30]], ['c', '2', [21.5, 90]], ['c', '3', [-21.5, 90]]]],
       ['Point guard turns the corner and attacks: first look. The big rolls. The trailer gets in his vision for the pitch-back three.',
-        [['d', '1', [1.5, 47], [5, 56], [7, 72]], ['c', '5', [-2, 64], [-3, 80]], ['c', '4', [-5.5, 48], [-1, 66]], '|', ['p', '1', '4'], '|', ['sh', '4']]],
+        [['d', '1', [1.5, 47], [4.5, 52]], ['c', '4', [-5.5, 38]], '|', ['d', '1', [6, 62], [7, 72]], ['c', '5', [-2, 64], [-3, 80]], ['c', '4', [-5, 52], [-1, 66]], '|', ['p', '1', '4'], '|', ['sh', '4']]],
     ],
   },
   'SP-22': {
-    p: { '1*': 'top', 2: 'rw', 3: 'lw', 4: 'rb', 5: 'lb', x1: [0, 24.5], x2: [14.8, 16.2], x3: [-14.8, 16.2], x4: [5.3, 7.4], x5: [-5.3, 7.4], c: [-26, 30] },
+    p: { '1*': 'top', 2: 'rw', 3: 'lw', 4: 'rb', 5: 'lb', x1: [0, 24.5], x2: [14.8, 16.2], x3: [-14.8, 16.2], x4: [4.6, 6.9], x5: [-4.6, 6.9], c: [-26, 30] },
     n: [['24 seconds on the clock', [0, 40]]],
     s: [
       ['The offense has 24 seconds to score. The defense gets a stop and finishes it with the rebound.',
@@ -379,7 +379,7 @@ Object.assign(DIAGRAMS, {
   // ---------- CD: Toughness & Conditioning ----------
   'CD-21': {
     court: 'f',
-    p: { '1*': 'top', 2: 'rw', 3: 'lw', x1: [0, 24.5], x2: [14.8, 16.2], x3: [-14.8, 16.2], 'c*': [25.5, 44] },
+    p: { '1*': 'top', 2: 'rw', 3: 'lw', x1: [0, 24], x2: [15, 15], x3: [-15, 15], 'c*': [25.5, 44] },
     n: [['20 seconds a possession', [-12, 60]]],
     s: [
       ['The offense has 20 seconds to score.',
@@ -393,7 +393,7 @@ Object.assign(DIAGRAMS, {
           ['c', 'x1', [2, 75]], ['c', 'x2', [10, 75]], ['c', 'x3', [-6, 75]]]],
       ['Coach passes to them on the way back and they attack again. Any foul sends that team off; the third team rotates in every 4 minutes.',
         [['p', '1', 'c'], ['c', 'x1', [2, 60]], ['c', 'x2', [12, 60]], ['c', 'x3', [-8, 60]], '|',
-          ['c', 'x1', [1, 40]], ['c', 'x2', [14, 38]], ['c', 'x3', [-12, 40]], ['p', 'c', 'x2']]],
+          ['c', 'x1', [1, 40]], ['c', 'x2', [14, 38]], ['c', 'x3', [-12, 40]], ['p', 'c', 'x2'], ['c', '1', [0, 30]], ['c', '2', [11, 28]], ['c', '3', [-11, 28]]]],
     ],
   },
 });
