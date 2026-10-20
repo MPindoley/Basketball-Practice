@@ -317,7 +317,7 @@
     </div>`;
   }
   function filterBar(prefix) {
-    return `<div class="search">${I.search}<input class="field" type="search" id="${prefix}q" data-search="${prefix}" value="${esc(libQuery)}" placeholder="Search 108 drills: closeout, Villanova, 3v3…" aria-label="Search drills"></div>
+    return `<div class="search">${I.search}<input class="field" type="search" id="${prefix}q" data-search="${prefix}" value="${esc(libQuery)}" placeholder="Search ${allDrills().length} drills: closeout, Villanova, 3v3…" aria-label="Search drills"></div>
       <div class="filters chips">
         ${['', ...LEVELS].map(l => `<button class="chip ${libLevel === l ? 'on' : ''}" data-act="level" data-v="${l}">${l ? levelBars(l) + l : 'All levels'}</button>`).join('')}
         <button class="chip ${libCollege ? 'on' : ''}" data-act="college">${I.star.replace('<svg', '<svg width="14" height="14"')}College drills</button>

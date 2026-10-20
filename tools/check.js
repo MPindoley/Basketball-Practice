@@ -7,6 +7,7 @@ const load = f => fs.readFileSync(path.join(root, f), 'utf8');
 
 global.Court = eval(load('js/court.js') + ';Court');
 eval(load('js/data.js') + ';global.DATA = DATA');
+eval(load('js/drills-college.js'));
 global.DIAGRAMS = {};
 for (const f of fs.readdirSync(path.join(root, 'js')).filter(f => /^diagrams-\d+\.js$/.test(f)).sort()) {
   eval(load('js/' + f).replace('const DIAGRAMS = {};', ''));

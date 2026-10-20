@@ -19,7 +19,7 @@ Plans, notes and your own drills save in the browser on that device. When the ap
 
 ## Update the drill library
 
-The drill text comes straight from the spreadsheet. After editing the workbook, rebuild the data file:
+The drill text comes straight from the spreadsheet; the extra college drills live in `js/drills-college.js`, which the import never touches. After editing the workbook, rebuild the data file:
 
 ```sh
 pip install openpyxl
