@@ -45,6 +45,7 @@
   const levelBars = l => `<span class="level l${LEVELS.indexOf(l) + 1}" title="${esc(l)}"><i></i><i></i><i></i></span>`;
   const drill = id => BY_ID[id] || state.custom[id];
   const allDrills = () => DATA.drills.concat(Object.values(state.custom));
+  const BOOK = new Set((DATA.groups.find(g => g.id === 'plays') || { cats: [] }).cats); // playbook categories
   const thumbs = new Map();
   const thumb = id => {
     if (!thumbs.has(id)) thumbs.set(id, DIAGRAMS[id] ? Court.thumb({ ...DIAGRAMS[id], id }) : Court.blank(false));
@@ -164,8 +165,8 @@
       </header>
       <main id="main"></main>
       <nav class="tabs" aria-label="Sections">
-        ${[['plan', 'Plan'], ['drills', 'Drills'], ['cat-PL', 'Plays', 'plays'], ['run', 'Run'], ['board', 'Board'], ['notes', 'Notes']]
-          .map(([k, l, t = k]) => `<a href="#${k}" data-tab="${t}">${I[t]}<span>${l}</span></a>`).join('')}
+        ${[['plan', 'Plan'], ['drills', 'Drills'], ['plays', 'Plays'], ['run', 'Run'], ['board', 'Board'], ['notes', 'Notes']]
+          .map(([k, l]) => `<a href="#${k}" data-tab="${k}">${I[k]}<span>${l}</span></a>`).join('')}
       </nav>
       <a id="runpill" href="#run" hidden></a>
     </div>`;
@@ -175,8 +176,8 @@
   function render() {
     mainBoards.forEach(b => b.destroy());
     mainBoards = [];
-    main.innerHTML = ({ plan: viewPlan, drills: viewDrills, run: viewRun, board: viewBoard, notes: viewNotes })[view]();
-    const tab = view === 'drills' && catOpen === 'PL' ? 'plays' : view;
+    main.innerHTML = ({ plan: viewPlan, drills: viewDrills, plays: viewPlays, run: viewRun, board: viewBoard, notes: viewNotes })[view]();
+    const tab = view === 'drills' && BOOK.has(catOpen) ? 'plays' : view;
     $$('.tabs a').forEach(a => a.classList.toggle('on', a.dataset.tab === tab));
     $$('.board-scope', main).forEach(s => mainBoards.push(mountBoard(s, { loop: view === 'run', autoplay: view === 'run' })));
     if (view === 'board') mountSketch($('#sketch'), sketchData(), () => save(false));
@@ -208,7 +209,7 @@
     closeDetailEl();
     let v = h, c = null;
     if (h.startsWith('cat-')) { v = 'drills'; c = h.slice(4); }
-    if (!['plan', 'drills', 'run', 'board', 'notes'].includes(v)) v = 'plan';
+    if (!['plan', 'drills', 'plays', 'run', 'board', 'notes'].includes(v)) v = 'plan';
     if ('#' + (h || 'plan') !== lastHash) { closePicker(); closeSheet(); $('#drillform') && $('#drillform').remove(); }
     lastHash = '#' + (h || 'plan');
     if (v === view && c === catOpen && main.childElementCount) return;
@@ -337,16 +338,16 @@
   function viewDrills() {
     if (catOpen) {
       const list = allDrills().filter(d => d.cat === catOpen);
-      const what = catOpen === 'PL' ? 'plays' : 'drills';
+      const what = BOOK.has(catOpen) ? 'plays' : 'drills';
       return `<a class="back" href="#drills">${I.back}All categories</a>
         <div class="cat-title" style="${gc(catOpen)}"><span class="cat-code" style="font-size:22px;padding:6px 9px 5px">${esc(catOpen)}</span><h1>${esc(DATA.cats[catOpen] || '')}</h1></div>
         <p class="muted">${list.length} ${what} · tap one to see it drawn up, or + to add it to <b>${esc(cur().name)}</b>.</p>
         <div class="drill-list">${list.map(d => drillCard(d)).join('')}</div>`;
     }
     const filtering = libQuery || libLevel || libCollege;
-    const drillsOnly = allDrills().filter(d => d.cat !== 'PL'), college = drillsOnly.filter(d => d.college).length;
+    const drillsOnly = allDrills().filter(d => !BOOK.has(d.cat)), college = drillsOnly.filter(d => d.college).length;
     const plays = allDrills().length - drillsOnly.length;
-    return `<div class="section-head" style="margin-top:0"><h2>Drill Library</h2><span class="muted num">${drillsOnly.length} drills · ${college} from college programs${plays ? ` · ${plays} HS plays` : ''}</span></div>
+    return `<div class="section-head" style="margin-top:0"><h2>Drill Library</h2><span class="muted num">${drillsOnly.length} drills · ${college} from college programs${plays ? ` · ${plays} plays and sets` : ''}</span></div>
       ${filterBar('lib')}
       <div id="libres">${filtering ? results(false) : groupsGrid()}</div>
       <div style="margin-top:28px"><button class="btn" data-act="newdrill">${I.plus}Add your own drill</button></div>`;
@@ -357,8 +358,16 @@
       <div class="cat-grid">${g.cats.map(c => {
         const list = allDrills().filter(d => d.cat === c);
         const lv = LEVELS.map(l => list.filter(d => d.level === l).length);
-        return `<a class="cat-tile" href="#cat-${c}" style="${gc(c)}"><span class="big">${c}</span><span><b>${esc(DATA.cats[c])}</b><small class="num">${list.length} ${c === 'PL' ? 'plays' : 'drills'} · ${lv[0]} foundation · ${lv[2]} advanced</small></span></a>`;
+        return `<a class="cat-tile" href="#cat-${c}" style="${gc(c)}"><span class="big">${c}</span><span><b>${esc(DATA.cats[c])}</b><small class="num">${list.length} ${BOOK.has(c) ? 'plays' : 'drills'} · ${lv[0]} foundation · ${lv[2]} advanced</small></span></a>`;
       }).join('')}</div></section>`).join('');
+  }
+
+  function viewPlays() {
+    return `<div class="section-head" style="margin-top:0"><h2>Playbook</h2><span class="muted">Tap one to see it run, or + to add it to <b>${esc(cur().name)}</b>.</span></div>` +
+      [...BOOK].map(c => {
+        const list = allDrills().filter(d => d.cat === c);
+        return list.length ? `<section class="group" style="${gc(c)}"><h2>${esc(DATA.cats[c])}</h2><div class="drill-list">${list.map(d => drillCard(d)).join('')}</div></section>` : '';
+      }).join('');
   }
 
   // ---------- picker overlay ----------
