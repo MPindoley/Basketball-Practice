@@ -11,6 +11,7 @@
     drills: ic('<rect x="3" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.5"/>'),
     run: ic('<circle cx="12" cy="13.5" r="7.5"/><path d="M12 10v3.5l2.5 2M9.5 2.5h5M12 2.5V6"/>'),
     board: ic('<path d="M4 20l4.2-1L19.3 7.9a2.1 2.1 0 0 0-3-3L5.2 16z"/><path d="M14.5 6.5l3 3"/>'),
+    plays: ic('<circle cx="6.5" cy="17" r="3"/><path d="M14.5 4.5l5 5M19.5 4.5l-5 5M9 14.5c2-4 4.5-6.5 7.5-7.5M13.5 6.5l3-.5-.5 3"/>'),
     notes: ic('<path d="M5 4.5A1.5 1.5 0 0 1 6.5 3H19v15H6.5A1.5 1.5 0 0 0 5 19.5z"/><path d="M5 19.5A1.5 1.5 0 0 0 6.5 21H19v-3M9 7.5h6"/>'),
     play: ic('<path d="M8 5.2v13.6a.6.6 0 0 0 .9.5l10.7-6.8a.6.6 0 0 0 0-1L8.9 4.7a.6.6 0 0 0-.9.5z"/>', 1),
     pause: ic('<rect x="6.5" y="5" width="4" height="14" rx="1"/><rect x="13.5" y="5" width="4" height="14" rx="1"/>', 1),
@@ -163,8 +164,8 @@
       </header>
       <main id="main"></main>
       <nav class="tabs" aria-label="Sections">
-        ${[['plan', 'Plan'], ['drills', 'Drills'], ['run', 'Run'], ['board', 'Board'], ['notes', 'Notes']]
-          .map(([k, l]) => `<a href="#${k}" data-tab="${k}">${I[k]}<span>${l}</span></a>`).join('')}
+        ${[['plan', 'Plan'], ['drills', 'Drills'], ['cat-PL', 'Plays', 'plays'], ['run', 'Run'], ['board', 'Board'], ['notes', 'Notes']]
+          .map(([k, l, t = k]) => `<a href="#${k}" data-tab="${t}">${I[t]}<span>${l}</span></a>`).join('')}
       </nav>
       <a id="runpill" href="#run" hidden></a>
     </div>`;
@@ -175,7 +176,8 @@
     mainBoards.forEach(b => b.destroy());
     mainBoards = [];
     main.innerHTML = ({ plan: viewPlan, drills: viewDrills, run: viewRun, board: viewBoard, notes: viewNotes })[view]();
-    $$('.tabs a').forEach(a => a.classList.toggle('on', a.dataset.tab === view));
+    const tab = view === 'drills' && catOpen === 'PL' ? 'plays' : view;
+    $$('.tabs a').forEach(a => a.classList.toggle('on', a.dataset.tab === tab));
     $$('.board-scope', main).forEach(s => mainBoards.push(mountBoard(s, { loop: view === 'run', autoplay: view === 'run' })));
     if (view === 'board') mountSketch($('#sketch'), sketchData(), () => save(false));
     tickRun();
@@ -317,7 +319,7 @@
     </div>`;
   }
   function filterBar(prefix) {
-    return `<div class="search">${I.search}<input class="field" type="search" id="${prefix}q" data-search="${prefix}" value="${esc(libQuery)}" placeholder="Search ${allDrills().length} drills: closeout, Villanova, 3v3…" aria-label="Search drills"></div>
+    return `<div class="search">${I.search}<input class="field" type="search" id="${prefix}q" data-search="${prefix}" value="${esc(libQuery)}" placeholder="Search drills and plays: closeout, Villanova, Texas…" aria-label="Search drills"></div>
       <div class="filters chips">
         ${['', ...LEVELS].map(l => `<button class="chip ${libLevel === l ? 'on' : ''}" data-act="level" data-v="${l}">${l ? levelBars(l) + l : 'All levels'}</button>`).join('')}
         <button class="chip ${libCollege ? 'on' : ''}" data-act="college">${I.star.replace('<svg', '<svg width="14" height="14"')}College drills</button>
@@ -335,14 +337,16 @@
   function viewDrills() {
     if (catOpen) {
       const list = allDrills().filter(d => d.cat === catOpen);
+      const what = catOpen === 'PL' ? 'plays' : 'drills';
       return `<a class="back" href="#drills">${I.back}All categories</a>
         <div class="cat-title" style="${gc(catOpen)}"><span class="cat-code" style="font-size:22px;padding:6px 9px 5px">${esc(catOpen)}</span><h1>${esc(DATA.cats[catOpen] || '')}</h1></div>
-        <p class="muted">${list.length} drills · tap a drill to see it drawn up, or + to add it to <b>${esc(cur().name)}</b>.</p>
+        <p class="muted">${list.length} ${what} · tap one to see it drawn up, or + to add it to <b>${esc(cur().name)}</b>.</p>
         <div class="drill-list">${list.map(d => drillCard(d)).join('')}</div>`;
     }
     const filtering = libQuery || libLevel || libCollege;
-    const total = allDrills().length, college = allDrills().filter(d => d.college).length;
-    return `<div class="section-head" style="margin-top:0"><h2>Drill Library</h2><span class="muted num">${total} drills · ${college} from college programs</span></div>
+    const drillsOnly = allDrills().filter(d => d.cat !== 'PL'), college = drillsOnly.filter(d => d.college).length;
+    const plays = allDrills().length - drillsOnly.length;
+    return `<div class="section-head" style="margin-top:0"><h2>Drill Library</h2><span class="muted num">${drillsOnly.length} drills · ${college} from college programs${plays ? ` · ${plays} HS plays` : ''}</span></div>
       ${filterBar('lib')}
       <div id="libres">${filtering ? results(false) : groupsGrid()}</div>
       <div style="margin-top:28px"><button class="btn" data-act="newdrill">${I.plus}Add your own drill</button></div>`;
@@ -353,7 +357,7 @@
       <div class="cat-grid">${g.cats.map(c => {
         const list = allDrills().filter(d => d.cat === c);
         const lv = LEVELS.map(l => list.filter(d => d.level === l).length);
-        return `<a class="cat-tile" href="#cat-${c}" style="${gc(c)}"><span class="big">${c}</span><span><b>${esc(DATA.cats[c])}</b><small class="num">${list.length} drills · ${lv[0]} foundation · ${lv[2]} advanced</small></span></a>`;
+        return `<a class="cat-tile" href="#cat-${c}" style="${gc(c)}"><span class="big">${c}</span><span><b>${esc(DATA.cats[c])}</b><small class="num">${list.length} ${c === 'PL' ? 'plays' : 'drills'} · ${lv[0]} foundation · ${lv[2]} advanced</small></span></a>`;
       }).join('')}</div></section>`).join('');
   }
 

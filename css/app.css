@@ -29,6 +29,7 @@
   --g-team: #0e9384;
   --g-compete: #c99604;
   --g-breaks: #78859a;
+  --g-plays: #c0267a;
 
   --display: "Barlow Condensed", "Arial Narrow", "Roboto Condensed", sans-serif;
   --body: "Barlow", "Segoe UI", system-ui, -apple-system, sans-serif;
@@ -85,7 +86,7 @@ main {
 
 .tabs {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; background: var(--surface);
-  border-top: 1px solid var(--line); display: grid; grid-template-columns: repeat(5, 1fr);
+  border-top: 1px solid var(--line); display: grid; grid-template-columns: repeat(6, 1fr);
   padding-bottom: env(safe-area-inset-bottom, 0px);
   padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-area-inset-right, 0px);
 }
