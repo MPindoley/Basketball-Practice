@@ -10,6 +10,7 @@ eval(load('js/data.js') + ';global.DATA = DATA');
 eval(load('js/drills-college.js'));
 eval(load('js/plays.js'));
 eval(load('js/sets.js'));
+eval(load('js/program.js'));
 global.DIAGRAMS = {};
 for (const f of fs.readdirSync(path.join(root, 'js')).filter(f => /^diagrams-\d+\.js$/.test(f)).sort()) {
   eval(load('js/' + f).replace('const DIAGRAMS = {};', ''));

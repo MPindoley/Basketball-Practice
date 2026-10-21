@@ -1,7 +1,7 @@
 // Offline support: serve from the network when there is one, fall back to the last copy for gyms with no signal.
-const CACHE = 'practice-book-v7';
-const SHELL = ['./', 'index.html', 'css/app.css', 'js/data.js', 'js/drills-college.js', 'js/plays.js', 'js/sets.js', 'js/court.js', 'js/diagrams-1.js', 'js/diagrams-2.js',
-  'js/diagrams-3.js', 'js/diagrams-4.js', 'js/diagrams-5.js', 'js/diagrams-6.js', 'js/diagrams-7.js', 'js/app.js', 'manifest.webmanifest', 'icon.svg', 'icon-180.png', 'icon-512.png'];
+const CACHE = 'practice-book-v8';
+const SHELL = ['./', 'index.html', 'css/app.css', 'js/data.js', 'js/drills-college.js', 'js/plays.js', 'js/sets.js', 'js/program.js', 'js/court.js', 'js/diagrams-1.js', 'js/diagrams-2.js',
+  'js/diagrams-3.js', 'js/diagrams-4.js', 'js/diagrams-5.js', 'js/diagrams-6.js', 'js/diagrams-7.js', 'js/diagrams-8.js', 'js/app.js', 'manifest.webmanifest', 'icon.svg', 'icon-180.png', 'icon-512.png'];
 
 self.addEventListener('install', e => e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting())));
 self.addEventListener('activate', e => e.waitUntil(
