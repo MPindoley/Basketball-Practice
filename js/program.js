@@ -85,6 +85,10 @@
     oreb: { t: 'Offensive rebounding: never 5, maybe 4, minimum 3 crash. The shooter gets back. When only 3 crash, the 1 is the second safety.', drills: ['LB-06', 'RB-06'], confirm: true },
   };
   const P = DATA.program;
+  P.typeLabels = { transition: 'Transition', secondary: 'Secondary', motion: 'Motion', set: 'Sets', counter: 'Counters', 'quick hitter': 'Quick Hitters', delay: 'Delays' };
+  // Our own defense switches everything, so every motion, action and continuity offense carries these reads.
+  P.switchReads = ['Slip the screen when the defense talks early.', 'Seal the smaller defender after a switch.', 'Re-screen when they jump the first one.'];
+  P.switchDrill = 'LB-09';
   P.sayings = [P.motto, ...P.philosophies, ...P.coreValues, ...P.bbValues, ...P.musts.map(x => x.t), ...P.absolutes.map(x => x.t)];
   P.our5Options = [
     ...P.absolutes.map(x => ({ t: x.t, kind: 'Absolute' })), ...P.keys.map(x => ({ t: x.t, kind: 'Key' })),
