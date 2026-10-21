@@ -45,5 +45,47 @@ for (const [id, dg] of Object.entries(DIAGRAMS)) {
     if (Math.hypot(p[0] - q[0], p[1] - q[1]) < 2.2) fail(`${id}: ${a} and ${b} start on top of each other`);
   }
 }
+
+// ---------- the Lake program (js/program.js) ----------
+const P = DATA.program;
+for (const id of P.missing) fail(`program.js patches ${id}, which is not in the library`);
+const refs = [];
+const walk = (o, where) => {
+  if (Array.isArray(o)) o.forEach(x => walk(x, where));
+  else if (o && typeof o === 'object') {
+    for (const [k, v] of Object.entries(o)) {
+      if (k === 'drills' && Array.isArray(v)) v.forEach(id => refs.push([id, where]));
+      else if (k === 'play' && typeof v === 'string') refs.push([v, where]);
+      else walk(v, where);
+    }
+  }
+};
+walk(P, 'program notes'); walk(DATA.defense, 'defense notes'); walk(DATA.plays, 'offense notes'); walk(DATA.positions, 'guards & posts notes');
+DATA.templates.forEach(t => t.items.forEach(id => refs.push([id, `template "${t.name}"`])));
+DATA.drills.forEach(d => (d.drills || []).forEach(id => refs.push([id, d.id])));
+refs.push([P.switchDrill, 'switch reads']);
+for (const [id, where] of refs) if (!ids.has(id)) fail(`${where} links ${id}, which is not in the library`);
+
+const BOOKCATS = new Set(DATA.groups.find(g => g.id === 'plays').cats);
+for (const d of DATA.drills) {
+  if (BOOKCATS.has(d.cat)) {
+    if (!P.LADDER.includes(d.from)) fail(`${d.id}: from must be one of ${P.LADDER.join(', ')}`);
+    if (d.cat === 'PL' && !P.TYPES.includes(d.type)) fail(`${d.id}: type must be one of ${P.TYPES.join(', ')}`);
+  }
+  for (const v of d.values || []) if (!P.VALUES.includes(v)) fail(`${d.id}: "${v}" is not one of the six values`);
+  if (d.candidate) for (const team of P.LADDER) if (DATA.runsHere(d, team, {})) fail(`${d.id}: a candidate is in Our Package without the coach switching it on`);
+}
+for (const c of P.calls) if (!P.LADDER.includes(P.fromOf(c))) fail(`call ${c.code}: from must be one of ${P.LADDER.join(', ')}`);
+for (let i = 1; i <= 11; i++) {
+  const d = DATA.drills.find(x => x.id === 'PL-' + String(i).padStart(2, '0'));
+  if (!d || P.LADDER.indexOf(d.from) > P.LADDER.indexOf('8')) fail(`PL-${String(i).padStart(2, '0')}: the Base 10 run at 8th grade or lower`);
+}
+const decodes = { 1: ['man'], 0: ['soft man'], 13: ['man run and jump', 'three-quarter court'], 14: ['centerfield', 'full court'],
+  231: ['2-1-2 trap', 'three-quarter court', 'man'], 342: ['1-2-2 trap', 'full court', '2-3 zone'] };
+for (const [code, want] of Object.entries(decodes)) {
+  const got = (DATA.decodeCall(code) || '').toLowerCase();
+  for (const w of want) if (!got.includes(w)) fail(`decodeCall("${code}") should mention "${w}" (got "${got}")`);
+}
+if (DATA.decodeCall('999') !== null) fail('decodeCall("999") should be null');
 console.log(errors ? `\n${errors} problem(s)` : `All ${Object.keys(DIAGRAMS).length} diagrams OK`);
 process.exit(errors ? 1 : 0);
