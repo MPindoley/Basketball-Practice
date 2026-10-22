@@ -6,7 +6,8 @@ A practice planning app for the 7th & 8th grade team, built from the *MS Basketb
 - **Drills**: all drills by group (spreadsheet, college and full-court timed drills), with search and level/college filters. Every drill opens to an animated whiteboard that walks through the drill step by step, plus setup, how it runs, coaching points, the MS adaptation, and your own notes.
 - **Run**: runs the practice live. A big countdown for each drill, a beep at 1 minute left and a triple beep at time, "on pace / behind" against the plan, the drill's whiteboard on a loop, coaching points, and what's up next. The screen stays awake while it runs.
 - **Board**: a blank half or full court to draw on with your finger during a timeout or a drill.
-- **Notes**: the blueprint and principles, offense install checklist, defense concepts, guards and posts, and the HS readiness targets, each linked to the drills that teach it. Tick items off as you install them.
+- **Playbook**: the Lake package for your team (Our Package) in the program's order: transition, secondary, motion, sets, quick hitters, out of bounds, then the defensive numbers. Every play shows where it runs in the program (Runs at 7, 8, F, JV, V); what comes later sits in the Coming at Freshman / JV / Varsity sections, and the Offense Options the staff is choosing from have their own section. Any play can be switched on or off for your team with "We run this".
+- **Notes**: the Program (motto, values, absolutes, keys, musts, the offensive structure, your team and Our 5), Calls & Numbers with flashcards for the defensive calls, the blueprint and principles, offense install checklist, defense concepts, guards and posts, and the HS readiness targets, each linked to the drills that teach it. Tick items off as you install them.
 - **Add your own drills** (Drills tab, bottom) with text and a sketch of the setup.
 
 ## Use it

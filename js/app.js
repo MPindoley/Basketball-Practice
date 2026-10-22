@@ -43,7 +43,8 @@
   const gc = cat => `--gc:var(--g-${(GROUP[cat] || { id: 'breaks' }).id})`;
   const LEVELS = ['Foundation', 'Intermediate', 'Advanced'];
   const levelBars = l => `<span class="level l${LEVELS.indexOf(l) + 1}" title="${esc(l)}"><i></i><i></i><i></i></span>`;
-  const drill = id => BY_ID[id] || state.custom[id];
+  const own = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
+  const drill = id => (own(BY_ID, id) && BY_ID[id]) || (own(state.custom, id) && state.custom[id]) || null;
   const allDrills = () => DATA.drills.concat(Object.values(state.custom));
   const BOOK = new Set((DATA.groups.find(g => g.id === 'plays') || { cats: [] }).cats); // playbook categories
   // the Lake program (js/program.js): the "Runs at" ladder is a different idea from drill difficulty, so it never says "level"
@@ -219,6 +220,7 @@
   // ---------- routing ----------
   function route() {
     const h = decodeURIComponent(location.hash.slice(1));
+    if ((h.startsWith('drill-') || h === 'flash') && !main.childElementCount) render(); // opened straight from a link: draw the screen behind it
     if (h.startsWith('drill-')) { openDrill(h.slice(6)); return; }
     if (h === 'flash') { if (!$('#flash')) openFlash(); return; }
     $('#flash') && $('#flash').remove();
@@ -917,7 +919,7 @@
       const src = notesTab === 'offense' ? DATA.plays : DATA.defense;
       body = src.map(sec => `<div class="section-head"><h2>${esc(sec.title)}</h2><span class="muted num">${sec.items.filter(x => x.title && state.installed[notesTab + ':' + sec.title + ':' + x.title]).length}/${sec.items.filter(x => x.title).length} installed</span></div>
         <div class="stack" style="gap:8px">${sec.items.map((x, i) => x.sub ? `<div class="eyebrow" style="margin-top:6px">${esc(x.sub)}</div>` : `
-          <section class="card note-item"><div class="top"><span class="n">${esc(x.n || i + 1)}</span><b>${esc(x.title)}</b>${installBtn(notesTab + ':' + sec.title + ':' + x.title)}</div>
+          <section class="card note-item"><div class="top"><span class="n">${esc(x.n || i + 1)}</span><b>${esc(x.title)}</b>${confirmTag({ ...x, code: notesTab + ':' + x.title }, true)}${installBtn(notesTab + ':' + sec.title + ':' + x.title)}</div>
           ${x.staff ? `<div class="staff">${esc(x.staff)}</div>` : ''}${x.text ? `<p>${esc(x.text)}</p>` : ''}${x.drills.length ? chipsFor(x.drills) : ''}</section>`).join('')}</div>`).join('');
     } else if (notesTab === 'positions') {
       body = DATA.positions.map(sec => `<div class="section-head"><h2>${esc(sec.title)}</h2></div><div class="stack" style="gap:8px">${sec.items.map(x => `
