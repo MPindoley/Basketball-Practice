@@ -195,4 +195,229 @@
     if (item.candidate || !from) return false;
     return LADDER.indexOf(from) <= LADDER.indexOf(team || '8');
   };
+
+  // ---------- notes, Lake callouts, values tags and practice templates ----------
+    // ---------- Coach's Notes: Defense and Offense install notes in the staff's words ----------
+    // The spreadsheet's notes taught things the staff program doesn't (deny one pass away, push the ball baseline,
+    // fight over or under screens, 3/4 front low side, trap with the chest). They are replaced here at load time.
+    // staff = the staff packet's words; text = how we teach it. confirm = a section 1 default the staff must confirm.
+    const TRAP_RULES = "Feet together. NO splits. Mirror the ball with your hands. NO FOULS (don't bail them out).";
+    DATA.defense = [
+      { title: '1 · Man: Pack Line, Switch Everything', items: [
+        { title: 'On Ball', staff: "Good stance. Nose on the ball. Arm's length at most (set by how well you can guard the dribble). Force the weak hand when possible. Make them drive into a crowd. On a drive, stay square, wall up, thumbs in the ears. Always jump to the ball (become help). Great pressure without getting beat. Active hands.",
+          text: "Keep the ball in front of you. We don't care where the ball goes, except NO baseline drives. Pressure the ball, but don't get too extended: protect the paint.", drills: ['ZN-04', 'LB-04', 'PD-02', 'PD-06', 'TD-23'] },
+        { title: 'Closeouts', confirm: true, staff: "Sprint 2/3 of the way. Break down with weight back. High hand or hands. Know if you're closing out to a 2, 2½ or 3. The foot closest to the middle is the lead foot; baseline closeouts are the opposite. On the drive, thumbs in the ears and wall up.",
+          text: "3 = a shooter: close tight with a high hand and take away the shot. 2½ = can shoot but would rather drive: close to an arm's length, balanced. 2 = a driver: close short, take away the drive and contest late. Never give up the baseline.", drills: ['LB-04', 'PD-06', 'PD-07', 'PD-23', 'PD-03', 'RB-22'] },
+        { title: 'Help', staff: 'ALWAYS inside or on the 16-foot line. At least one foot in the lane on the back side. Stay flat. Be ready to help and recover (show & go, hunt & go). Make the driver pick up the ball (recover when two hands go to the ball). Move on ALL ball movement.',
+          text: 'Pack line: nobody denies one pass away. Let the catch happen, then pressure it. Jump to the ball on every pass. Denying is only for the FULL DENY special.', drills: ['LB-01', 'TD-05', 'PD-21', 'TD-01', 'TD-02'] },
+        { title: 'Post', confirm: true, staff: 'Always arm and leg in front, high side: step over, not under. NO direct passes. On the catch, jump behind and wall up. Be physical. On an entry, the wing digs out ("root"): stay open, cat & mouse, active hands. Double down from the wing when called or when the scouting report says so.',
+          text: 'Switch mismatch: when a switch leaves a guard on a post, the guard fronts him high side and the back side helps over the top. Same post rules.', drills: ['PD-22', 'PO-02', 'PO-03', 'PO-04', 'LB-02'] },
+        { title: 'Ball Screens', staff: 'COMMUNICATE. Switch ALL ball screens. Come together and receive the new man. BLITZ if called or if the scouting report calls for it.',
+          text: 'Talk early ("Screen! Switch!"), come together shoulder to shoulder so nobody splits it, and receive the new man. Whenever a switch happens, we must RECEIVE the switch. HEDGE and ICE are calls, not our default.', drills: ['LB-02', 'TD-24', 'SS-09'] },
+        { title: 'Off-Ball Screens', staff: "Switch ALL screens. Jump below the screen when you're getting screened. Blow it up.",
+          text: 'Talk early, switch, and stay with your man until you receive the switch. YOYO tells one man not to switch off his man.', drills: ['LB-03', 'TD-22', 'SS-04', 'SS-05'] },
+        { title: 'Handoffs', staff: "Treat them like ball screens. Receive the switch shoulder to shoulder. NO splits. If your man has the ball, jump under when the handoff happens so you don't get pinned.",
+          text: 'Same words as a ball screen: talk, come together, switch, receive.', drills: ['LB-02', 'LB-03'] },
+        { title: 'Cutters', staff: "BUST ALL CUTTERS. No one cuts across your face; make them go behind. Stay with the cutter until you receive a switch (don't assume).",
+          text: 'NO free cutters. Get your body in his path and make him go behind you.', drills: ['LB-03', 'PD-21', 'TD-01'] },
+        { title: 'Traps', staff: TRAP_RULES,
+          text: 'We trap only on a call: BLITZ (ball screens), THUMBS DOWN (the first pass), and the 20 and 30 series.', drills: ['TD-08', 'TD-09', 'TD-24'] },
+        { title: 'Rebounding', staff: "The possession isn't over until we secure the rebound. Hit and go (make contact first). BE PHYSICAL. Don't get pushed under the rim. Rebound out of your area.",
+          text: 'NO 2nd shots. A stop counts only once we have the ball.', drills: ['RB-06', 'RB-02', 'RB-05', 'PD-23', 'LB-06'] },
+        { title: 'Transition D', staff: 'Sprint to the paint (build out). Stop the ball. Guard the front side first. COMMUNICATE.',
+          text: 'NO fast-break layups. The first man back stops the ball. Talk: "I\'ve got ball!"', drills: ['LB-06', 'TR-08', 'TR-09', 'TR-22'] },
+        { title: 'BLOB D', staff: 'Butt to the baseline. Man on the ball faces the ball, shaded middle. Switch all screens. COMMUNICATE. Make them throw over the top, out high.',
+          text: 'Nobody gets behind you. Practice it against our own OB plays.', drills: ['LB-07', 'SP-02'] },
+        { title: 'SLOB D', staff: 'Play everything straight up. The man guarding the ball sags off and takes away the pass toward the basket. Make them throw a non-threatening pass away from the basket. COMMUNICATE.',
+          text: 'Straight up means our normal 1 rules, so we still switch every screen.', drills: ['LB-07', 'SP-02'] },
+        { title: '0 · Soft Man', staff: 'NO feet outside the arc. NO penetration. Same principles as 1, without ball pressure.',
+          text: 'The on-ball man picks the ball up at the arc and uses the cushion to beat the driver to his spot. Everything else is 1.', drills: ['ZN-05', 'LB-01', 'LB-05'] },
+      ] },
+      { title: 'Zones: 2, 3, 4', items: [
+        { title: '2 · 2-3 Zone', staff: 'Traditional. The top two guard the top and wing, help on the high post, with help from the bottom man. The bottom block defenders have the corners. The middle man has block to block, and the high post when needed.',
+          text: 'No traps. Move on the flight of every pass, arms wide, and talk.', drills: ['ZN-01', 'TD-07', 'TO-03', 'LB-05'] },
+        { title: '3 · 3-2 Zone', staff: 'Flat across the top. The point and elbow players are wide and try to match up when possible. The bottom block defenders guard the corners and give backside post help. The ball-side block is guarded by the point man. Be active, communicate, arms wide, move when the ball moves.',
+          text: 'Our most athletic player is the point man. He runs a triangle around the key and is always even with the ball: at the top when it is up top, down the ball-side lane line on a wing, on the ball-side block when it goes to the corner.', drills: ['ZN-03', 'TD-07', 'TO-03'] },
+        { title: '4 · 1-3-1 Zone', staff: 'Traditional. The point man guards side to side. The wing men guard the wings and have backside help. The middle man runs the normal triangle from the nail to the block. The bottom man has the corners.',
+          text: 'No traps. The trapping 1-3-1 is not in our package.', drills: ['ZN-02', 'TD-07', 'TO-03'] },
+        { title: 'Perimeter defense', staff: 'Be active, communicate, arms wide, move when the ball moves.',
+          text: 'Move on the flight of the pass, not the catch. Close out to a 2, 2½ or 3, and never give up the baseline.', drills: ['TD-07', 'LB-04'] },
+        { title: 'Post defense', staff: 'Always arm and leg in front, high side: step over, not under. NO direct passes.',
+          text: 'Same post rules as 1. The back line talks on every pass.', drills: ['TD-07', 'PD-22'] },
+        { title: 'Traps', staff: TRAP_RULES,
+          text: "2, 3 and 4 are traditional: we don't trap in them. We trap only on a call (THUMBS DOWN, BLITZ) or in the 20 and 30 series.", drills: ['TD-08'] },
+        { title: 'Boxing out', staff: 'Hit and go (make contact first). Rebound out of your area.',
+          text: "Zones give up offensive rebounds: everyone finds the nearest body on the shot. The possession isn't over until we secure the ball.", drills: ['RB-05', 'RB-06', 'RB-21'] },
+      ] },
+      { title: 'Full Court: 13, 14, 20s, 30s', items: [
+        { title: '13 · Man Run & Jump', confirm: true, staff: 'Play behind your man and let it in. Extreme pressure on the ball. Jump from the back side and rotate. Keep the ball in front of you. Zig-zag.',
+          text: "Our 8th grade press, picked up at three-quarter court. The jump is a switch: receive it. Over half court, we're in 1.", drills: ['PR-04', 'PD-02', 'BH-08', 'LM-06'] },
+        { title: '14 · Centerfield', confirm: true, staff: 'Same as 13, but no one on the inbounder: deny every inbound pass.',
+          text: 'Centerfield owns every lob. Ball in? Play 13.', drills: ['PR-05', 'PA-07'] },
+        { title: 'Reading a 3-digit call', confirm: true, staff: 'First = the defense, second = where on the court we pick up, third = the half-court defense we play after.',
+          text: 'Second digit: 4 = full court, 3 = three-quarter court, 2 = half court. 231 = 2-1-2 trap at three-quarter court, then 1. 342 = 1-2-2 trap at full court, then 2.', drills: ['LB-05', 'PR-06', 'PR-07'] },
+        { title: '20 Series · 2-1-2 Trap', confirm: true, staff: '231, 232, 233, 221, etc.',
+          text: 'Let it in. The front two turn the ball up the sideline and trap; the middle man takes away the middle. Over half court, sprint into the last digit.', drills: ['PR-06', 'TD-08', 'TD-09'] },
+        { title: '30 Series · 1-2-2 Trap', confirm: true, staff: '341, 342, 343, 323, etc.',
+          text: 'The man up front takes away the middle, the wing stops the ball on the sideline, and they trap. Over half court, sprint into the last digit.', drills: ['PR-07', 'TD-08', 'TD-09'] },
+        { title: 'How and when we trap', staff: TRAP_RULES,
+          text: 'THUMBS DOWN: trap the first pass and take the next pass away with rotation from the back side. In the 20 and 30 series, trap the sideline and the half-court corner: the lines are extra defenders.', drills: ['TD-08', 'TD-09', 'TD-10'] },
+        { title: 'Interceptor reads', staff: 'THUMBS DOWN: take the next pass away with rotation from the back side.',
+          text: "Read the passer's eyes and jump the first pass out of the trap. In 14, centerfield reads the inbounder.", drills: ['TD-09', 'TD-10'] },
+        { title: 'Out of the press', staff: "Whatever we're in: COMMUNICATION and RELENTLESS EFFORT.",
+          text: "Over half court, sprint into the call's last digit. Broken? Build out: sprint to the paint, stop the ball, guard the front side first.", drills: ['TR-09', 'TR-08', 'LB-05'] },
+        { title: 'BLUE and FOLD', confirm: true, staff: 'BLUE: change defense after the first pass. FOLD: soft press. Retreat on every pass. Control the tempo.',
+          text: "BLUE: after the first pass, change into the half-court defense in the call's last digit (or the one the coach calls).", drills: ['LB-05'] },
+      ] },
+    ];
+
+    const BASE10 = ['PL-01', 'PL-02', 'PL-03', 'PL-04', 'PL-05', 'PL-06', 'PL-07', 'PL-08', 'PL-09', 'PL-10', 'PL-11'];
+    DATA.plays = [
+      { title: 'Our Offense', items: [
+        { n: '1', title: 'Transition', confirm: true, text: '1 brings the ball up the middle, 2 and 3 sprint wide to the corners, 4 runs to the rim, and 5 trails and inbounds after a make. Run and read: numbers, attack. No numbers, flow into the secondary without stopping. Fast, but not at the expense of a bad shot.', drills: ['PL-12', 'LB-08', 'TR-04', 'TR-03'] },
+        { n: '2', title: 'Secondary', confirm: true, text: 'Push (PL-02). Flow into it with no call and no stop.', drills: ['PL-02', 'LB-08'] },
+        { n: '3', title: 'Motion', confirm: true, text: '4-out 1-in for now. Pass and cut, or pass and screen away. A dribble at you means backdoor. Fill the spot you left. The post seals and ducks in. Our own D switches every screen, so read it: slip, seal, re-screen.', drills: ['PL-13', 'TO-21', 'TO-02', 'LB-09', 'SS-11'] },
+        { n: '4', title: 'Set or Quick Hitter', confirm: true, text: 'Only when needed. We learn all of the Base 10: Push (secondary); Up, Down and Texas (quick hitters); Triple (with 33), Ohio, Yellow, 2 Guard, Arch and Michigan (sets). Each level picks one set, one motion and one quick hitter. On "reset", get to the play\'s spots fast and run it.', drills: [...BASE10, 'TO-04'] },
+        { n: '5', title: 'Offensive rebounding', confirm: true, text: 'Never 5, maybe 4, minimum 3 crash. The shooter gets back. When only 3 crash, the 1 is the second safety.', drills: ['LB-06', 'RB-06'] },
+        { n: '6', title: 'One More', text: 'Share the ball: pass up a good shot for a great one. In our scrimmages an assisted basket scores +1.', drills: ['PA-22', 'LM-05', 'TO-05'] },
+        { n: '7', title: 'Good Shot vs Bad Shot', text: 'Value possessions. A good shot is open, in your range and in rhythm. A bad shot is contested, out of your range, or forced before the ball has moved. The coach calls it on the spot.', drills: ['LM-05', 'TO-05', 'SP-22'] },
+      ] },
+      { title: 'Zone Offense', items: [
+        { n: '1', title: 'Primary Option', text: 'First look against the zone: usually gap penetration or a high-post flash.', drills: ['TO-03'] },
+        { n: '2', title: 'Secondary Option', text: 'Skip pass to the weak side or a short-corner feed when the zone shifts.', drills: ['TO-03'] },
+        { n: '3', title: 'Other Options', text: 'Overload a side, screen the back line, or dribble-push to shift the zone.', drills: ['TO-03'] },
+        { n: '4', title: 'Where ball handlers need to be available', text: 'In the gaps between two defenders, not in front of one. After you pass, relocate to the next open gap.', drills: ['TO-03', 'SH-07'] },
+        { n: '5', title: 'Identify weak attack points when crashing', text: 'High post, short corner, and behind the zone on the skip side. Zones struggle to box out: crash 3 (maybe 4, never 5) on every shot, and the shooter gets back.', drills: ['TO-03', 'LB-06', 'RB-06'] },
+        { n: '6', title: 'Screen angles (point spine where you want your guy to go)', text: "Screen the back-line zone defender inside-out to free a shooter. The screener's back faces where the shot will come from.", drills: ['TO-03'] },
+      ] },
+      { title: 'Press Breaks', items: [
+        { n: '1', title: 'Primary Option', text: 'First pass target and where the ball goes next. Inbound within 5 seconds. Our inbound against a press is Four Across (OB-12).', drills: ['SP-01', 'OB-12'] },
+        { n: '2', title: 'Secondary Option', text: 'Middle flash or reversal when the first pass is denied.', drills: ['SP-01', 'PA-07'] },
+        { n: '3', title: 'Screening angles (point spine where you want your guy to go)', text: "Screens for the inbound receiver; the screener's spine points to where the receiver should cut.", drills: ['SP-01', 'OB-12'] },
+        { n: '4', title: 'Spacing', text: 'Stay 15-20 feet apart; never two players in the same area. A middle player and a sideline outlet at all times.', drills: ['SP-01', 'TR-04'] },
+        { n: '5', title: 'Deep looks', text: 'When the back defender cheats up, throw over the top. Look deep on the first pass.', drills: ['SP-01', 'PA-04'] },
+        { n: '6', title: 'Priming half-court offense', text: 'Once across half court: numbers, attack. No numbers, flow into Push and our motion without stopping.', drills: ['SP-01', 'LB-08'] },
+      ] },
+      { title: 'Baseline / Sideline Out Of Bounds', items: [
+        { n: '1', title: 'Primary Option', text: 'The look the play is built for. The inbounder calls it and slaps the ball; nobody moves before the slap. Run them against our own OB defense (LB-07).', drills: ['SP-02', 'OB-01', 'OB-02', 'OB-04', 'OB-05', 'LB-07'] },
+        { n: '2', title: 'Secondary Option', text: 'Second cutter or a screener slipping when the first look is covered. Against a switch, the screener seals the smaller man and steps to the rim.', drills: ['OB-01', 'OB-08', 'OB-10', 'OB-06'] },
+        { n: '3', title: 'Other options', text: 'Lob, skip, or quick hit if the defense switches or sags. Against a 2-3: Zone Stack Seam, Short Corner Seal and Box Curl.', drills: ['OB-03', 'OB-09', 'OB-11'] },
+        { n: '4', title: 'Cuts that can be cut if the play is not executed', text: 'A safety cutter (usually the point guard) flashes back to the ball every time.', drills: ['OB-02', 'OB-05', 'SP-02'] },
+        { n: '5', title: 'When to call timeout (awareness of time/score of the game)', text: 'Count reaches 4 with no open man, or late in a close game when we need a specific set. Know time, score, and timeouts left.', drills: ['SP-02', 'SP-03', 'OB-07'] },
+      ] },
+      { title: 'End Of Game', items: [
+        { n: '1', title: 'Up late', text: 'Use the clock, value the possession, and get to the free-throw line. Know who handles the ball.', drills: ['SP-03', 'SP-22'] },
+        { n: '2', title: 'Down late', text: 'Quick 2 or 3 based on time and score. Our call to foul is RED.', drills: ['SP-03', 'OB-06', 'OB-10'] },
+        { n: '3', title: 'Last shot', text: "Start the action with 8-10 seconds left so there's time for a rebound.", drills: ['SP-03', 'OB-07', 'SP-21'] },
+      ] },
+    ];
+
+    // ---------- "How we do it at Lake" callouts on library drills ----------
+    const lake = (text, ...ids) => ids.forEach(id => patch(id, { lake: text }));
+    lake('Phase 2 is pack line positioning: on or inside 16 feet, with a foot in the lane on the back side. Skip phase 3 (denial) unless we\'re teaching the FULL DENY special, and switch every screen in phase 6.', 'TD-03');
+    lake('Not our base: in 1 nobody denies one pass away. Use it only for the FULL DENY special; for 8th grade, run Pack Line Shell (LB-01) instead.', 'TD-06');
+    lake('Not our base: use it only for the FULL DENY special. For 8th grade, run Pack Line Shell (LB-01) instead, and even in a full deny, never give up the baseline.', 'PD-09');
+    lake('Run it as pack line shell: off the ball, on or inside 16 feet with a foot in the lane on the back side. Switch every screen and receive the new man.', 'TD-01');
+    lake('Pack line help: on or inside 16 feet, make the driver pick it up, and recover when two hands go to the ball. Switch every screen, and no baseline drives.', 'TD-02');
+    lake('This is our help rule: on or inside the 16-foot line, show and go, make the driver pick up the ball, and recover when two hands go to the ball.', 'TD-05');
+    lake("Our closeout: sprint 2/3, break down with your weight back and a high hand, and close to his rating: 3 tight, 2½ an arm's length, 2 short. On the drive, wall up with thumbs in the ears, and never give up the baseline.",
+      'PD-03', 'PD-04', 'PD-05', 'PD-06', 'PD-07', 'PD-21', 'PD-23');
+    lake("Closeout defender: close out our way (sprint 2/3, weight back, high hand): tight on a 3, an arm's length on a 2½, short on a 2. Shooter: take a good shot, not the first shot.", 'SH-09');
+    lake('Close out our way (sprint 2/3, weight back, high hand, to his 2, 2½ or 3), then hit and go: contact first, then go get the ball.', 'RB-22');
+    lake("Our trap rules: feet together, NO splits, mirror the ball with your hands, NO fouls (don't bail them out).", 'TD-08');
+    lake("Our trap rules: feet together, NO splits, mirror the ball with your hands, NO fouls. On the pass, sprint out of the trap.", 'TD-09');
+    lake("Press in 13, our 8th grade press; we trap only in the 20 and 30 series or on THUMBS DOWN. Trap rules: feet together, NO splits, mirror the ball with your hands, NO fouls.", 'TD-10');
+    lake('Run it as our BLITZ call: x5 jumps out, x1 comes over the top, and they trap the ball instead of pushing it back (feet together, NO splits, mirror the ball with your hands). Only when it\'s called or the scouting report says so; our default on every ball screen is switch.', 'TD-24');
+    lake('Switch all screens: talk early, jump below the screen and blow it up, and stay with your man until you receive the switch. Nobody guards the coaches, so on their screens, jump below and get through yourself.', 'TD-22');
+    lake('On defense: switch all screens, jump below the screen and blow it up, bust every cutter, and stay with your man until you receive the switch.', 'SS-04', 'SS-05');
+    lake('Post defender: arm and leg in front, high side, never the baseline side. Step over, not under; on the catch, jump behind and wall up.', 'PO-02');
+    lake('Post defender: on the flight of the pass, step over, not under, to get arm and leg in front, high side. On the catch, jump behind and wall up.', 'PO-03');
+    lake('On defense: the post defender plays high side and walls up on the catch, the wing digs on the entry ("root"), and we double down only when it\'s called or the scouting report says so.', 'PO-04');
+    lake('This is our post D: arm and leg in front, high side; step over, not under. On the catch, jump behind and wall up, and the wing digs on the entry.', 'PD-22');
+    lake('Build out: sprint to the paint, stop the ball, guard the front side first, and talk. NO fast-break layups.', 'TR-05', 'TR-07', 'TR-08', 'TR-09');
+    lake("Hit and go: make contact first, then go get the ball. Be physical, don't get pushed under the rim, and rebound out of your area: the possession isn't over until we secure it.",
+      'RB-01', 'RB-02', 'RB-03', 'RB-05', 'RB-06', 'RB-07');
+    lake("Hit and go: find your man, make contact first, then go get the ball. Here all 5 crash to test the box-out; when we're on offense in a game, it's 3 or 4, never 5, and the shooter gets back.", 'RB-21');
+    lake("Rebound out of your area, two hands, and chin it: the possession isn't over until we secure the ball.", 'RB-04');
+    lake('BLOB D: butt to the baseline, the man on the ball faces the ball shaded middle, switch all screens, talk, and make them throw it over the top, out high. SLOB D: straight up; the ball man sags off and takes away the pass toward the basket.', 'SP-02');
+    lake('Score it the Lake way: value possessions, +1 for "one more" (an assisted basket), and the coach calls good shot vs bad shot on the spot.', 'TO-05');
+    lake('This is our "One more": share the ball and pass up a good shot for a great one. In our scrimmages an assisted basket scores +1.', 'PA-22');
+    lake('A stop counts only once the ball is secured.', 'TD-04');
+    lake('No fast-break layups: sprint back, build out and stop the ball.', 'TR-22');
+    // found in the sweep (section 3.6): drills that teach denial one pass away or a ball-screen coverage as our default
+    lake("We don't deny one pass away: everyone off the ball is on or inside the 16-foot line. Use it for the scramble: cover for a teammate who got beat, and talk.", 'TD-21');
+    lake('Our 1 switches every ball screen, so give most reps against the switch: slip, seal, re-screen (LB-09). Soft and hedge are scout looks.', 'SS-09');
+
+    // Rewrite drill text that would teach our players the opposite of our rule (exact old text -> new text).
+    // A fix whose old text is gone (a re-import changed the drill) is reported, so tools/check.js fails instead of passing silently.
+    const fix = (id, field, from, to) => {
+      const d = byId(id);
+      if (!d) { P.missing.push(id); return; }
+      const old = JSON.stringify(d[field]);
+      if (Array.isArray(d[field])) d[field] = d[field].map(s => s === from ? to : s);
+      else if (typeof d[field] === 'string') d[field] = d[field].replace(from, to);
+      if (JSON.stringify(d[field]) === old) P.missing.push(`${id} (${field}: old text to rewrite not found)`);
+    };
+    fix('TD-08', 'points', 'Trap with knees and chest, not hands', 'Feet together, NO splits: mirror the ball with your hands');
+    fix('PD-06', 'points', 'Take away the middle drive', 'No baseline drives: make him drive into a crowd');
+    fix('PD-09', 'runs', 'takes away the middle and pushes baseline', 'stops the ball and never gives up the baseline');
+    fix('TD-21', 'runs', "while the defense denies 'on the line' one pass away", 'while the defense sits in the pack line, on or inside 16 feet');
+    fix('TD-21', 'points', 'One pass away: on the line and deny. Two passes away: on the help line', 'Off the ball: on or inside the 16-foot line, a foot in the lane on the back side');
+    fix('TD-22', 'points', "Cutter's defender stays attached and fights through every screen", 'Getting screened? Jump below the screen and blow it up');
+    fix('TD-22', 'points', "Screener's defender bumps the cutter, then gets back to his own man", 'Switch every screen: come together, receive the new man, and stay until you receive the switch');
+    fix('TD-22', 'ms', 'Teach one way through screens (stay attached and follow his path) and keep it the whole drill.', 'Teach one way through screens, our way: switch every screen. Keep it the whole drill.');
+    fix('TD-24', 'ms', "For 8th grade, start with a softer 'show' (two steps out, then back) before a full blitz.", 'BLITZ is a Varsity call for now; for 8th grade, learn the switch first (LB-02).');
+
+    // Guards & posts notes from the spreadsheet that fight the program (rewritten in place).
+    const posNote = (sec, title) => ((DATA.positions.find(s => s.title === sec) || { items: [] }).items.find(x => x.title === title)) || {};
+    Object.assign(posNote('Guards', 'Denying the pass'), { title: 'Pack line help',
+      staff: 'ALWAYS inside or on the 16-foot line. At least one foot in the lane on the back side. Make the driver pick up the ball. Move on ALL ball movement.',
+      text: 'Helps on or inside 16 feet, jumps to the ball on every pass, and recovers when two hands go to the ball. Denies only on the FULL DENY call.',
+      drills: ['LB-01', 'TD-05', 'PD-21', 'TD-06'] });
+    Object.assign(posNote('Posts', 'Wing entry 1v1'), { staff: 'Defense plays our post D: arm and leg in front, high side; offense seals; live ball on entry.' });
+
+    // The spreadsheet's HS Prep Day made "deny" a practice focus. Same minutes: Wing Deny (PD-09) -> Blackhawk Gap & Closeout (PD-21).
+    const plan4 = DATA.templates.find(t => t.id === 'plan4');
+    if (plan4) Object.assign(plan4, { focus: 'Pack line pressure, ball-screen reads, and press chaos. Every drill is scored.', items: plan4.items.map(id => id === 'PD-09' ? 'PD-21' : id) });
+
+    // ---------- values: drills that clearly train the program's mentality ----------
+    const tag = (values, ...ids) => ids.forEach(id => patch(id, { values: [...new Set([...((byId(id) || {}).values || []), ...values])] }));
+    tag(['Effort', 'Toughness', 'Teammate'], 'CD-03');
+    tag(['Effort', 'Toughness', 'Edge'], 'CD-21', 'RB-06', 'TD-23');
+    tag(['Effort', 'Communication', 'Toughness'], 'TD-04');
+    tag(['Toughness', 'Teammate'], 'PD-11');
+    tag(['Effort', 'Toughness'], 'TR-22', 'RB-05', 'RB-07', 'SS-22', 'TR-07');
+    tag(['Effort', 'Communication', 'Teammate'], 'CG-21');
+    tag(['Toughness'], 'RB-01', 'RB-02', 'FN-03', 'FN-21', 'PO-21', 'SH-10');
+    tag(['Communication', 'Toughness'], 'RB-21');
+    tag(['Communication'], 'TD-01', 'TD-02', 'TD-07', 'TD-22', 'TD-24');
+    tag(['Communication', 'Intelligence'], 'TD-03');
+    tag(['Teammate', 'Communication', 'Effort'], 'TD-21');
+    tag(['Effort', 'Communication'], 'TR-08', 'TR-09', 'TR-21', 'FC-03', 'FC-04');
+    tag(['Effort'], 'TR-10', 'TD-09', 'CD-01', 'CD-02', 'CD-04', 'CG-04', 'FC-01', 'FC-02');
+    tag(['Effort', 'Edge'], 'TD-10', 'CG-03');
+    tag(['Teammate', 'Communication'], 'PA-22', 'TR-23');
+    tag(['Intelligence', 'Teammate'], 'PA-21');
+    tag(['Intelligence', 'Toughness'], 'SP-22', 'BH-21');
+    tag(['Intelligence'], 'TO-05', 'SP-03', 'SP-21');
+
+    // ---------- practice templates (section 3.10): about 90 minutes, water every 20-25, end with free throws ----------
+    DATA.templates.push(
+      { id: 'plan5', name: 'Lake D Install', title: 'Lake D Install: Pack Line, Switch Everything',
+        focus: 'Closeouts to a 2, 2½ or 3, pack line help on or inside 16 feet, switch every screen, then crash 3 and build out. NO dribble penetration.',
+        message: 'A defensive possession is not complete until we secure the ball.',
+        items: ['WU-01', 'PD-02', 'PD-11', 'LB-04', 'BR-01', 'LB-01', 'LB-02', 'BR-01', 'LB-03', 'LM-03', 'BR-01', 'RB-02', 'LB-06', 'SH-10', 'BR-02'] },
+      { id: 'plan6', name: 'Lake O Install', title: 'Lake O Install: Transition, Secondary, Motion',
+        focus: 'Run and read, flow into Push and 4-out motion without stopping, beat the switch, and share the ball ("One more"). Good shot vs bad shot.',
+        message: 'Smart teams win, dumb teams lose.',
+        items: ['WU-01', 'PA-22', 'PL-12', 'BR-01', 'LB-08', 'PL-13', 'BR-01', 'LB-09', 'PL-08', 'PL-01', 'BR-01', 'LM-05', 'SH-10', 'BR-02'] },
+      { id: 'plan7', name: 'Game Week', title: 'Game Week: Calls, Out of Bounds, End of Game',
+        focus: 'Get into every call by "3", defend BLOB and SLOB our way, sharpen our OB plays and the Base 10, and know the clock late.',
+        message: 'How we play, not who we play.',
+        items: ['WU-01', 'LM-01', 'LB-05', 'BR-01', 'LB-07', 'OB-01', 'OB-05', 'BR-01', 'PL-04', 'PL-08', 'PL-10', 'SP-04', 'BR-01', 'OB-12', 'SP-03', 'SH-10', 'BR-02'] },
+      { id: 'plan8', name: 'Compete Day', title: 'Compete Day: Lake Mentality',
+        focus: 'Communication + Intelligence + Effort: win the 50/50 balls, talk on every action, create chaos, and value every possession. Every drill is scored.',
+        message: 'Be the hammer, not the nail.',
+        items: ['WU-01', 'LM-01', 'LM-03', 'BR-01', 'RB-06', 'TD-04', 'BR-01', 'LM-06', 'LM-04', 'TD-23', 'BR-01', 'LM-05', 'SH-10', 'BR-02'] },
+    );
 })();

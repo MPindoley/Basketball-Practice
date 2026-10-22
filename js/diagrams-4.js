@@ -129,7 +129,7 @@ Object.assign(DIAGRAMS, {
     n: [['trap here', [13, 50]]],
     s: [
       ['Ball handler dribbles up the sideline. The on-ball defender keeps them there.', [['d', '1', [21.5, 54]], ['c', 'x1', [19, 55]]]],
-      ['Trap at the half-court corner: knees and chest, no reaching. Don\'t let the ball split it.', [['c', 'x2', [20.5, 51]], ['c', 'x1', [18.5, 54.5]]]],
+      ['Trap at the half-court corner: feet together, NO splits, mirror the ball with your hands, NO fouls.', [['c', 'x2', [20.5, 51]], ['c', 'x1', [18.5, 54.5]]]],
       ['Add an interceptor who reads the passer\'s eyes and jumps the pass.', [['c', '2', [8, 58]], ['c', 'x3', [11, 56]], ['p', '1', 'x3']]],
     ],
   },
