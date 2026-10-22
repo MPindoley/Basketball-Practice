@@ -469,4 +469,27 @@ Object.assign(DIAGRAMS, {
         [['c', 'x1', [8, 31.4]], ['p', '1', 'x1']]],
     ],
   },
+  'PL-18': {
+    p: { '1*': [15, 22], 2: [-15, 22], 3: 'rc', 4: 'lc', 5: 'lb' },
+    n: [['5 = the big · 1-4 play the wings and corners', [0, 41]]],
+    s: [
+      ['Pass to the corner, cut through: 1 passes to 3 and cuts through the middle for the ball back. Then rotate: 4 lifts, 2 comes over to the wing, 1 fills the corner.',
+        [['p', '1', '3'], '|', ['c', '1', [8, 16], [2.5, 9.5]], '|',
+          ['c', '1', [-3, 4], [-12, 2.5], 'lc'], ['c', '4', [-20, 12], [-15, 22]], ['c', '2', [-7, 26.5], [7, 26.5], [15, 22]]]],
+      ['Wing to wing, interchange: 3 hits 2, who passes to 4 on the other wing. Then 2 screens down for 3, who comes up to the wing, and 2 fills the corner.',
+        [['p', '3', '2'], '|', ['p', '2', '4'], '|', ['s', '2', [18, 8.5]], '|', ['c', '3', [21.5, 9.5], [19.5, 15.5], [15, 22]], '|', ['c', '2', 'rc']]],
+      ['The big lives on the block opposite the ball. The ball went left, so 5 crosses to the right block. That\'s 3 passes: time for the pick and roll.',
+        [['c', '5', [0, 8], 'rb']]],
+      ['5 comes up and screens for 4, who comes off it to the middle as 5 rolls. Same time, far side: 2 back-screens, 3 cuts to the rim for a look and 2 pops for a shot.',
+        [['s', '5', [0, 14], [-11.5, 21]], ['s', '2', [13, 17.5]], '|',
+          ['d', '4', [-12.5, 25.5], [-6.5, 25.5], [-1.5, 22]], ['c', '5', [-8, 15], [-4.5, 9.5]], ['c', '3', [10, 19.5], [5, 13], [2.5, 8.5]], '|',
+          ['c', '3', [9, 3], 'rc'], ['c', '2', [15, 22]]]],
+      ['Nothing there? 4 drives and throws the baseline pass to 3 in the corner. 3 swings it up to 2, then screens for 4, who runs off it to the corner. 2 hits him.',
+        [['d', '4', [2, 15], [4, 8.5]], ['c', '5', 'lb'], '|', ['p', '4', '3'], '|', ['p', '3', '2'], ['s', '3', [9.5, 6]], '|',
+          ['c', '4', [6.5, 2.5], [13, 1.8], 'rc'], ['p', '2', '4']]],
+      // No 'sh' here: 3 leaving the paint while a shot is up would break crash 3, and the end state must be a fresh 4-out start.
+      ['Open? 4 shoots it: crash 3, shooter back. No shot? 3 fills the open wing and we\'re 4-out again, 5 opposite the ball. It never stops and runs to either side.',
+        [['c', '3', [4, 13], [-5, 20], [-15, 22]]]],
+    ],
+  },
 });
