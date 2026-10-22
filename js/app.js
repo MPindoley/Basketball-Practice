@@ -43,9 +43,16 @@
   const gc = cat => `--gc:var(--g-${(GROUP[cat] || { id: 'breaks' }).id})`;
   const LEVELS = ['Foundation', 'Intermediate', 'Advanced'];
   const levelBars = l => `<span class="level l${LEVELS.indexOf(l) + 1}" title="${esc(l)}"><i></i><i></i><i></i></span>`;
-  const drill = id => BY_ID[id] || state.custom[id];
+  const own = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
+  const drill = id => (own(BY_ID, id) && BY_ID[id]) || (own(state.custom, id) && state.custom[id]) || null;
   const allDrills = () => DATA.drills.concat(Object.values(state.custom));
   const BOOK = new Set((DATA.groups.find(g => g.id === 'plays') || { cats: [] }).cats); // playbook categories
+  // the Lake program (js/program.js): the "Runs at" ladder is a different idea from drill difficulty, so it never says "level"
+  const P = DATA.program, LADDER = P.LADDER, VALUES = P.VALUES, keyOf = P.keyOf;
+  const teamName = t => P.LEVEL_NAMES[t] + (t === '7' || t === '8' ? ' grade' : '');
+  const cap = s => s ? s[0].toUpperCase() + s.slice(1) : '';
+  const typeName = d => cap(d.style && d.style !== 'motion' ? d.style : d.type); // "Quick hitter", "Action", "Continuity"
+  const isConf = it => !!(it.confirm || (it.play && (BY_ID[it.play] || {}).confirm));
   const thumbs = new Map();
   const thumb = id => {
     if (!thumbs.has(id)) thumbs.set(id, DIAGRAMS[id] ? Court.thumb({ ...DIAGRAMS[id], id }) : Court.blank(false));
@@ -85,12 +92,17 @@
     }
     return p;
   }
+  // program settings: our team, "We run this" overrides, Our 5, cleared "Staff to confirm" tags
+  const fresh = () => ({ team: '8', runs: {}, our5: [], confirmed: {} });
   function seed() {
     const p = planFrom('plan1');
-    return { v: 1, updated: 0, plans: { [p.id]: p }, current: p.id, custom: {}, notes: {}, installed: {}, sketch: { full: false, h: [], f: [] } };
+    return { v: 1, updated: 0, plans: { [p.id]: p }, current: p.id, custom: {}, notes: {}, installed: {}, sketch: { full: false, h: [], f: [] }, ...fresh() };
   }
-  let state = read(KEY) || seed();
+  // saved or synced state from before the program lacks the new keys; an unknown team would empty Our Package
+  const load = s => { s = { ...fresh(), ...s }; if (!LADDER.includes(s.team)) s.team = '8'; return s; };
+  let state = load(read(KEY) || seed());
   const cur = () => state.plans[state.current] || Object.values(state.plans)[0];
+  const ours = it => it.mine ? state.runs[it.id] !== false : DATA.runsHere(it, state.team, state.runs);
   function save(rerender = true) {
     state.updated = Date.now();
     write(KEY, state);
@@ -99,7 +111,7 @@
   }
 
   // ---------- sync through the artifact's per-person store (claude.ai); local-only elsewhere ----------
-  const merge = (to, from) => ['plans', 'custom', 'notes', 'installed'].forEach(k => {
+  const merge = (to, from) => ['plans', 'custom', 'notes', 'installed', 'runs', 'confirmed'].forEach(k => {
     to[k] = to[k] || {};
     for (const id in from[k] || {}) if (!(id in to[k])) to[k][id] = from[k][id];
   });
@@ -121,7 +133,7 @@
         const dirty = first && state.updated > (read(SKEY) || 0);
         if (remote.updated > state.updated) {
           const mine = dirty ? state : null;
-          state = remote;
+          state = load(remote);
           if (mine) { merge(state, mine); save(); } else { write(KEY, state); render(); }
           refreshDetail();
         } else if (remote.updated < state.updated) {
@@ -151,15 +163,17 @@
   }
 
   // ---------- UI scaffolding ----------
-  let view = 'plan', catOpen = null, toolsOpen = -1, notesTab = 'blueprint';
-  let libQuery = '', libLevel = '', libCollege = false, speed = 1, navigatedIn = false, lastHash = '#plan';
+  let view = 'plan', catOpen = null, toolsOpen = -1, notesTab = 'program', allCalls = false, flash = null;
+  let libQuery = '', libLevel = '', libCollege = false, libValue = '', speed = 1, navigatedIn = false, lastHash = '#plan';
+  const foldsOpen = new Set(); // Playbook <details> stay open across re-renders
+  document.addEventListener('toggle', e => { const k = e.target.dataset && e.target.dataset.fold; if (k) foldsOpen[e.target.open ? 'add' : 'delete'](k); }, true);
   let pick = null; // {mode: 'add'|'slot'|'swap', i, cats, label}
   let mainBoards = [];
 
   document.getElementById('app').innerHTML = `
     <div class="shell">
       <header class="topbar">
-        <a class="brand" href="#plan" aria-label="Practice Book home">${BALL}<span><b>Practice Book</b><small>7th &amp; 8th Grade · 2026-27</small></span></a>
+        <a class="brand" href="#plan" aria-label="Practice Book home">${BALL}<span><b>Practice Book</b><small id="teamline"></small></span></a>
         <span class="spacer"></span>
         <span id="sync" class="sync"></span>
       </header>
@@ -177,6 +191,7 @@
     mainBoards.forEach(b => b.destroy());
     mainBoards = [];
     main.innerHTML = ({ plan: viewPlan, drills: viewDrills, plays: viewPlays, run: viewRun, board: viewBoard, notes: viewNotes })[view]();
+    $('#teamline').textContent = `Lake Flyers · ${teamName(state.team)} · 2026-27`;
     const tab = view === 'drills' && BOOK.has(catOpen) ? 'plays' : view;
     $$('.tabs a').forEach(a => a.classList.toggle('on', a.dataset.tab === tab));
     $$('.board-scope', main).forEach(s => mainBoards.push(mountBoard(s, { loop: view === 'run', autoplay: view === 'run' })));
@@ -205,7 +220,10 @@
   // ---------- routing ----------
   function route() {
     const h = decodeURIComponent(location.hash.slice(1));
+    if ((h.startsWith('drill-') || h === 'flash') && !main.childElementCount) render(); // opened straight from a link: draw the screen behind it
     if (h.startsWith('drill-')) { openDrill(h.slice(6)); return; }
+    if (h === 'flash') { if (!$('#flash')) openFlash(); return; }
+    $('#flash') && $('#flash').remove();
     closeDetailEl();
     let v = h, c = null;
     if (h.startsWith('cat-')) { v = 'drills'; c = h.slice(4); }
@@ -237,6 +255,8 @@
     const total = times[times.length - 1] - toMin(p.start);
     const count = p.items.filter(it => it.d).length;
     const rows = p.items.map((it, i) => itemRow(it, i, times[i])).join('');
+    const vals = VALUES.map(v => [v, p.items.filter(it => it.d && ((drill(it.d) || {}).values || []).includes(v)).length])
+      .filter(x => x[1]).sort((a, b) => b[1] - a[1]);
     return `
       <section class="card plan-head">
         <div class="row" style="flex-wrap:nowrap;align-items:flex-start">
@@ -249,13 +269,17 @@
           <label class="lbl">Date<input class="field" type="date" id="pdate" data-field="date" value="${esc(p.date)}"></label>
           <label class="lbl">Start time<input class="field" type="time" id="pstart" data-field="start" value="${esc(p.start)}"></label>
           <label class="lbl wide">Focus<input class="field" id="pfocus" data-field="focus" value="${esc(p.focus)}" placeholder="What this practice is about"></label>
-          <label class="lbl" style="grid-column:1/-1">Message to the team<input class="field" id="pmsg" data-field="message" value="${esc(p.message)}" placeholder="One line they should remember"></label>
+          <label class="lbl" style="grid-column:1/-1">Message to the team<input class="field" id="pmsg" data-field="message" value="${esc(p.message)}" placeholder="One line they should remember" list="sayings"></label>
+          <datalist id="sayings">${P.sayings.map(s => `<option value="${esc(s)}">`).join('')}</datalist>
         </div>
         <div class="plan-stats">
           <div><b class="num">${total}</b><span>Minutes</span></div>
           <div><b class="num">${count}</b><span>Drills</span></div>
           <div><b class="num">${clock(toMin(p.start))}–${clock(times[times.length - 1], true)}</b><span>Start to finish</span></div>
         </div>
+        <div class="values-line"><span class="eyebrow">Trains</span>${vals.length
+          ? vals.map(([v, n]) => `<span><b>${v}</b> <span class="num">${n}</span></span>`).join('<i>·</i>')
+          : '<span class="muted">No mentality drills yet.</span> <a href="#cat-LM">Add one from Lake Mentality</a>'}</div>
       </section>
       <div class="timeline">${rows || `<div class="card empty"><h3>No drills yet</h3><p>Add drills from the library, or start from a template.</p><button class="btn primary" data-act="newplan">Start from a template</button></div>`}</div>
       <div class="plan-actions">
@@ -289,6 +313,7 @@
     const lines = [`${p.name.toUpperCase()} · ${prettyDate(p.date)} · ${clock(toMin(p.start))}–${clock(times[times.length - 1], true)}`];
     if (p.focus) lines.push('Focus: ' + p.focus);
     if (p.message) lines.push('Message: ' + p.message);
+    if (state.our5.length) lines.push('Our 5: ' + state.our5.join(' · '));
     lines.push('');
     p.items.forEach((it, i) => {
       const d = it.d && drill(it.d);
@@ -302,19 +327,29 @@
   function matches(d) {
     if (libLevel && d.level !== libLevel) return false;
     if (libCollege && !d.college) return false;
+    if (libValue && !(d.values || []).includes(libValue)) return false;
     if (!libQuery) return true;
     const q = libQuery.toLowerCase();
     return [d.id, d.name, d.college, d.players, d.setup, d.runs, DATA.cats[d.cat]].some(s => s && s.toLowerCase().includes(q));
   }
   const inPlan = id => cur().items.some(it => it.d === id);
-  function drillCard(d, picking) {
-    return `<div class="drill-card" style="${gc(d.cat)}">
+  // "Runs at" chips: filled from the lowest level that runs it up; our team gets a ring
+  const runsAt = (from, sm) => `<span class="runsat${sm ? ' sm' : ''}" role="img" aria-label="Runs at ${from ? esc(P.LEVEL_NAMES[from]) + (from === 'V' ? '' : ' and up') : ': not set'}"><b>Runs at</b>${LADDER.map((l, i) =>
+    `<i class="${from && i >= LADDER.indexOf(from) ? 'on' : ''}${l === state.team ? ' us' : ''}">${l}</i>`).join('')}</span>`;
+  const confirmTag = (it, tap) => !isConf(it) || state.confirmed[keyOf(it)] ? '' : tap
+    ? `<button class="confirm" data-act="confirm" data-k="${esc(keyOf(it))}" title="Tap twice once the staff confirms it">Staff to confirm</button>`
+    : '<span class="confirm">Staff to confirm</span>';
+  const isProg = d => !!(d.from || d.candidate);
+  function drillCard(d, picking, opts = {}) {
+    return `<div class="drill-card${opts.dim ? ' dim' : ''}" style="${gc(d.cat)}">
       <button class="thumb" data-act="open" data-id="${esc(d.id)}" aria-label="Open ${esc(d.name)}">${d.sketch ? sketchStatic(d.sketch, true) : thumb(d.id)}</button>
       <button class="info" data-act="open" data-id="${esc(d.id)}">
         <b>${esc(d.name)}</b>
         <span class="row" style="gap:8px"><span class="cat-code">${esc(d.id)}</span>${levelBars(d.level)}<span class="tag num">${d.min} min</span>${inPlan(d.id) && !picking ? '<span class="tag" style="color:var(--accent)">In plan</span>' : ''}</span>
+        ${isProg(d) ? `<span class="row prog-line">${runsAt(P.fromOf(d), true)}${d.num ? `<span class="numtag">${esc(d.num)}</span>` : ''}${d.type ? `<span class="tag">${esc(typeName(d))}</span>` : ''}${confirmTag(d)}</span>` : ''}
+        ${opts.why && d.why ? `<span class="why"><b>Why it fits Lake:</b> ${esc(d.why)}</span>` : ''}${opts.why && d.best ? `<span class="why"><b>Best for:</b> ${esc(d.best)}</span>` : ''}
         ${d.college ? `<span><span class="college">${I.star}${esc(d.college)}</span></span>` : ''}
-        <small class="muted">${esc(d.players || '')}</small>
+        ${opts.why ? '' : `<small class="muted">${esc(d.players || '')}</small>`}
       </button>
       <button class="add" data-act="${picking ? 'pick' : 'quickadd'}" data-id="${esc(d.id)}" aria-label="${picking ? 'Use' : 'Add'} ${esc(d.name)}" title="${picking ? 'Use this drill' : 'Add to plan'}">${picking ? I.check : I.plus}</button>
     </div>`;
@@ -322,9 +357,10 @@
   function filterBar(prefix) {
     return `<div class="search">${I.search}<input class="field" type="search" id="${prefix}q" data-search="${prefix}" value="${esc(libQuery)}" placeholder="Search drills and plays: closeout, Villanova, Texas…" aria-label="Search drills"></div>
       <div class="filters chips">
-        ${['', ...LEVELS].map(l => `<button class="chip ${libLevel === l ? 'on' : ''}" data-act="level" data-v="${l}">${l ? levelBars(l) + l : 'All levels'}</button>`).join('')}
-        <button class="chip ${libCollege ? 'on' : ''}" data-act="college">${I.star.replace('<svg', '<svg width="14" height="14"')}College drills</button>
-      </div>`;
+        ${['', ...LEVELS].map(l => `<button class="chip ${libLevel === l ? 'on' : ''}" data-act="level" data-v="${l}" aria-pressed="${libLevel === l}">${l ? levelBars(l) + l : 'All levels'}</button>`).join('')}
+        <button class="chip ${libCollege ? 'on' : ''}" data-act="college" aria-pressed="${libCollege}">${I.star.replace('<svg', '<svg width="14" height="14"')}College drills</button>
+      </div>
+      <div class="filters chips" role="group" aria-label="Values">${['', ...VALUES].map(v => `<button class="chip ${libValue === v ? 'on' : ''}" data-act="value" data-v="${v}" aria-pressed="${libValue === v}">${v || 'All values'}</button>`).join('')}</div>`;
   }
   function results(picking, cats) {
     const list = allDrills().filter(d => matches(d) && (!cats || cats.some(c => c === d.cat || c === d.id)));
@@ -344,7 +380,7 @@
         <p class="muted">${list.length} ${what} · tap one to see it drawn up, or + to add it to <b>${esc(cur().name)}</b>.</p>
         <div class="drill-list">${list.map(d => drillCard(d)).join('')}</div>`;
     }
-    const filtering = libQuery || libLevel || libCollege;
+    const filtering = libQuery || libLevel || libCollege || libValue;
     const drillsOnly = allDrills().filter(d => !BOOK.has(d.cat)), college = drillsOnly.filter(d => d.college).length;
     const plays = allDrills().length - drillsOnly.length;
     return `<div class="section-head" style="margin-top:0"><h2>Drill Library</h2><span class="muted num">${drillsOnly.length} drills · ${college} from college programs${plays ? ` · ${plays} plays and sets` : ''}</span></div>
@@ -362,18 +398,39 @@
       }).join('')}</div></section>`).join('');
   }
 
+  // Playbook order: offense in the program's order (transition first), then OB, then defenses by number (1, 0, 2, 3, 4, 13, 14, 20s, 30s)
+  const NUMS = ['1', '0', '2', '3', '4', '13', '14', '20s', '30s'];
+  const pos = (arr, v) => { const i = arr.indexOf(v); return i < 0 ? 99 : i; };
+  const bookSort = (a, b) => pos([...BOOK], a.cat) - pos([...BOOK], b.cat) || pos(P.TYPES, a.type) - pos(P.TYPES, b.type) || pos(NUMS, a.num) - pos(NUMS, b.num);
   function viewPlays() {
-    return `<div class="section-head" style="margin-top:0"><h2>Playbook</h2><span class="muted">Tap one to see it run, or + to add it to <b>${esc(cur().name)}</b>.</span></div>` +
-      [...BOOK].map(c => {
-        const list = allDrills().filter(d => d.cat === c);
-        return list.length ? `<section class="group" style="${gc(c)}"><h2>${esc(DATA.cats[c])}</h2><div class="drill-list">${list.map(d => drillCard(d)).join('')}</div></section>` : '';
-      }).join('');
+    const all = allDrills().filter(d => BOOK.has(d.cat)).sort(bookSort), rank = l => LADDER.indexOf(l), team = rank(state.team);
+    const pkg = all.filter(ours);
+    const grp = (title, list, cat) => list.length ? `<section class="group" style="${gc(cat)}"><h2>${esc(title)}</h2><div class="drill-list">${list.map(d => drillCard(d)).join('')}</div></section>` : '';
+    const fold = (key, title, sub, list, opts) => `<details class="fold" data-fold="${key}" ${foldsOpen.has(key) ? 'open' : ''}><summary><span>${esc(title)}</span><span class="count num">${list.length}</span></summary>
+      <p class="muted fold-sub">${sub}</p>${list.length ? `<div class="drill-list">${list.map(d => drillCard(d, false, opts)).join('')}</div>` : ''}</details>`;
+    const off = pkg.filter(d => d.cat === 'PL');
+    const turnedOff = all.filter(d => !d.candidate && d.from && rank(d.from) <= team && !ours(d));
+    return `<div class="section-head" style="margin-top:0"><h2>Playbook</h2><button class="chip on" data-act="goteam" aria-label="Our team: ${esc(P.LEVEL_NAMES[state.team])}. Change it in the Program tab">Our team: ${esc(P.LEVEL_NAMES[state.team])}</button></div>
+      <p class="muted" style="margin:0">Tap one to see it run, or + to add it to <b>${esc(cur().name)}</b>.</p>
+      <div class="section-head pkg-head"><h2>Our Package</h2><span class="muted num">${pkg.length} plays &amp; defenses</span></div>
+      ${P.TYPES.map(t => grp(P.typeLabels[t], off.filter(d => d.type === t), 'PL')).join('')}
+      ${grp('More plays', off.filter(d => !P.TYPES.includes(d.type)), 'PL')}
+      ${[...BOOK].filter(c => c !== 'PL').map(c => grp(DATA.cats[c], pkg.filter(d => d.cat === c), c)).join('')}
+      ${pkg.length ? '' : '<div class="card empty"><h3>Nothing in Our Package</h3><p>Pick our team in Notes · Program, or turn items on with “We run this”.</p></div>'}
+      <div class="folds">
+      ${LADDER.slice(team + 1).map(l => {
+        const list = all.filter(d => !d.candidate && d.from === l && !ours(d));
+        return fold('at-' + l, `Coming at ${P.LEVEL_NAMES[l]}`, list.length ? `What our pieces grow into. ${esc(P.LEVEL_NAMES[l])} runs these on top of everything below.` : `Nothing starts at ${esc(P.LEVEL_NAMES[l])} yet.`, list, { dim: true });
+      }).join('')}
+      ${fold('options', 'Offense Options', 'Real motion, action and continuity offenses for the staff to choose from. Open one and tap “We run this” to add it to Our Package.', all.filter(d => d.candidate && !ours(d)), { why: true })}
+      ${turnedOff.length ? fold('off', 'Turned off', `${esc(teamName(state.team))} would run these, but you switched them off. Open one and tap “We run this” to bring it back.`, turnedOff, { dim: true }) : ''}
+      </div>`;
   }
 
   // ---------- picker overlay ----------
   function openPicker(ctx) {
     pick = ctx;
-    libQuery = ''; libLevel = ''; libCollege = false;
+    libQuery = ''; libLevel = ''; libCollege = false; libValue = '';
     $('#picker') && $('#picker').remove();
     const ov = document.createElement('div');
     ov.className = 'overlay'; ov.id = 'picker';
@@ -474,6 +531,17 @@
     return ctl;
   }
 
+  // "We run this" + "Runs at" + confirm tag, for a program item (play, defense) or a call
+  const progRow = it => { const on = ours(it); return `<div class="prog" id="prog">${runsAt(P.fromOf(it))}
+    <button class="toggle${on ? ' on' : ''}" data-act="runs" data-k="${esc(keyOf(it))}" aria-pressed="${on}">${on ? I.check : I.plus}We run this</button>
+    <span class="muted prog-note">${on ? 'In Our Package' : 'Not in Our Package'}</span>${confirmTag(it, true)}</div>`; };
+  const itemByKey = k => k.startsWith('call:') ? P.calls.find(c => 'call:' + c.code === k) : drill(k);
+  function repaintOpen() { // after a toggle: update the open detail or call sheet in place (no re-animation)
+    const pr = $('#detail #prog');
+    if (pr) pr.outerHTML = progRow(drill($('#detail').dataset.id));
+    const sh = $('.sheet[data-code]');
+    if (sh) sh.innerHTML = callSheet(sh.dataset.code);
+  }
   function openDrill(id) {
     const d = drill(id);
     if (!d) { closeDetailEl(); return; }
@@ -493,14 +561,21 @@
             <div class="row" style="gap:8px"><span class="cat-code">${esc(d.id)}</span><span class="eyebrow">${esc(DATA.cats[d.cat] || '')}</span></div>
             <h1>${esc(d.name)}</h1>
             <div class="meta">${levelBars(d.level)}<span class="tag">${esc(d.level)}</span><span class="tag num">${d.min} min</span>
+              ${d.num ? `<span class="numtag">${esc(d.num)}</span>` : ''}${d.type ? `<span class="tag type">${esc(typeName(d))}</span>` : ''}
               ${d.college ? `<span class="college">${I.star}${esc(d.college)}</span>` : ''}${d.mine ? '<span class="college" style="background:var(--accent-soft);color:var(--accent)">Your drill</span>' : ''}</div>
+            ${isProg(d) ? progRow(d) : ''}
           </div>
           ${boardBlock(id)}
         </div>
         <div class="right stack">
+          ${d.candidate ? block('Offense option', `<p><b>Why it fits Lake:</b> ${esc(d.why || '')}</p><p><b>Best for:</b> ${esc(d.best || '')}</p>`, 'option') : ''}
           ${block(`${I.people.replace('<svg', '<svg width="18" height="18"')}Setup`, (d.players ? `<p style="font-weight:600;margin-bottom:6px">${esc(d.players)}</p>` : '') + (d.setup ? `<p>${esc(d.setup)}</p>` : ''))}
           ${block('How it runs', d.runs ? `<p>${esc(d.runs)}</p>` : '')}
+          ${block('How we do it at Lake', d.lake ? `<p>${esc(d.lake)}</p>` : '', 'lake')}
           ${block('Coaching points', d.points && d.points.length ? `<ul class="points">${d.points.map(p => `<li>${esc(p)}</li>`).join('')}</ul>` : '')}
+          ${d.cat === 'PL' ? `<p class="remind"><b>Boards</b> ${esc(P.oreb.t)}</p>` : ''}
+          ${d.type === 'motion' ? block('Beat the switch', `<p class="muted" style="margin-bottom:8px">Our own D switches everything, so we see it every day.</p><ul class="points">${P.switchReads.map(r => `<li>${esc(r)}</li>`).join('')}</ul>${chipsFor([P.switchDrill])}`, 'switch') : ''}
+          ${(d.drills || []).some(x => drill(x)) ? block('Breakdown drills', chipsFor(d.drills)) : ''}
           ${block('MS adaptation · progression', d.ms ? `<p>${esc(d.ms)}</p>` : '', 'adapt')}
           <section class="block"><h3>My notes</h3><textarea class="field" id="note-${esc(id)}" data-note="${esc(id)}" placeholder="What worked, who needs reps, how you changed it…">${esc(state.notes[id] || '')}</textarea></section>
           ${d.source || d.url ? `<p class="muted" style="font-size:14px;margin:0">Source: ${esc(d.source || '')}${d.url ? ` · <a href="${esc(d.url)}" target="_blank" rel="noopener">Original drill</a>` : ''}</p>` : ''}
@@ -557,12 +632,13 @@
     saveRun(); tickRun(true);
   }
 
+  const our5Strip = () => state.our5.length ? `<section class="our5-strip" aria-label="Our 5"><span class="eyebrow">Our 5</span><ol>${state.our5.map(t => `<li>${esc(t)}</li>`).join('')}</ol></section>` : '';
   function viewRun() {
     const p = run && runPlan();
     if (!p || !runItems().length) {
       run = null; saveRun();
       const plan = cur(), times = schedule(plan), items = plan.items.filter(it => it.d);
-      return `<section class="card" style="padding:22px">
+      return `${our5Strip()}<section class="card" style="padding:22px">
           <div class="eyebrow">Ready to run</div>
           <h1 style="font-size:40px;text-transform:uppercase;margin:6px 0 8px">${esc(plan.name)}</h1>
           <p class="muted" style="margin:0 0 6px">${items.length} drills · ${times[times.length - 1] - toMin(plan.start)} minutes${plan.focus ? ' · ' + esc(plan.focus) : ''}</p>
@@ -581,7 +657,7 @@
         <button class="btn primary big" data-act="endrun">${I.check}Done</button></section>`;
     }
     const items = runItems(), it = items[run.i], d = drill(it.d), next = items[run.i + 1];
-    return `<div class="run live">
+    return `${our5Strip()}<div class="run live">
       <div class="stack">
         <section class="card clock-card o1" style="${gc(d.cat)}">
           <div class="now"><span>Drill ${run.i + 1} of ${items.length}</span><span id="rpace" class="pace">On pace</span></div>
@@ -597,7 +673,7 @@
           </div>
           <p class="muted num" id="rends" style="text-align:center;margin:14px 0 0;font-size:14px"></p>
         </section>
-        ${d.points ? `<section class="block o3"><h3>Coaching points</h3><ul class="points">${d.points.map(x => `<li>${esc(x)}</li>`).join('')}</ul></section>` : ''}
+        ${d.points || d.lake ? `<section class="block o3">${d.lake ? `<p class="lake-mini"><b>At Lake</b> ${esc(d.lake)}</p>` : ''}${d.points ? `<h3>Coaching points</h3><ul class="points">${d.points.map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : ''}</section>` : ''}
         ${next ? `<section class="card up-next o4"><span class="eyebrow">Up next</span><span class="nm">${esc(drill(next.d).name)}</span><span class="num muted">${next.min} min</span></section>` : ''}
       </div>
       <div class="stack">
@@ -746,10 +822,93 @@
   // ---------- notes ----------
   const chipsFor = ids => `<div class="drill-chips">${ids.filter(id => drill(id)).map(id => `<button data-act="open" data-id="${id}" title="${esc(drill(id).name)}">${id} · ${esc(drill(id).name.length > 26 ? drill(id).name.slice(0, 24) + '…' : drill(id).name)}</button>`).join('')}</div>`;
   const installBtn = key => `<button class="check ${state.installed[key] ? 'on' : ''}" data-act="install" data-k="${esc(key)}" aria-pressed="${!!state.installed[key]}">${state.installed[key] ? I.check + 'Installed' : 'Not yet'}</button>`;
+  // ---------- the program, calls and flashcards ----------
+  const noteCard = (x, i, conf) => `<section class="card note-item"><div class="top">${i >= 0 ? `<span class="n">${i + 1}</span>` : ''}<b>${esc(x.t)}</b>${conf || ''}</div>
+    ${x.text ? `<p>${esc(x.text)}</p>` : ''}${chipsFor(x.drills || [])}</section>`;
+  const noteList = (title, list) => `<div class="section-head"><h2>${title}</h2></div><div class="stack" style="gap:8px">${list.map((x, i) => noteCard(x, i)).join('')}</div>`;
+  function viewProgram() {
+    const s = P.structure;
+    return `<section class="card prog-card"><div class="eyebrow">Our team</div>
+        <div class="filters chips" style="margin:0">${LADDER.map(l => `<button class="chip ${state.team === l ? 'on' : ''}" data-act="team" data-v="${l}" aria-pressed="${state.team === l}">${esc(P.LEVEL_NAMES[l])}</button>`).join('')}</div>
+        <p class="muted small">The Playbook and Calls show Our Package: what ${esc(teamName(state.team))} runs. Every team in the program uses the same words.</p></section>
+      <section class="card prog-card"><div class="row" style="justify-content:space-between;flex-wrap:nowrap"><div class="eyebrow">Our 5</div>
+          <button class="btn small" data-act="pick5">${state.our5.length ? 'Change' : 'Pick Our 5'}</button></div>
+        <div class="staff">${esc(P.staffNotes[0])}</div>
+        ${state.our5.length ? `<ol class="our5-list">${state.our5.map(t => `<li>${esc(t)}</li>`).join('')}</ol>` : '<p class="muted small">Pick up to 5 things you go nuts on. They show on the Run screen and in the copied plan.</p>'}</section>
+      <section class="card motto"><span class="eyebrow">Program motto</span><p>${esc(P.motto)}</p></section>
+      <div class="section-head"><h2>Philosophies</h2></div>
+      <section class="card note-item"><ul class="sayings">${P.philosophies.map(x => `<li>${esc(x)}</li>`).join('')}</ul></section>
+      <div class="section-head"><h2>Core values</h2></div>
+      <div class="value-tags">${P.coreValues.map(x => `<span>${esc(x)}</span>`).join('')}</div>
+      <div class="section-head"><h2>Basketball values</h2></div>
+      <section class="card note-item"><ol class="principles">${P.bbValues.map(x => `<li>${esc(x)}</li>`).join('')}</ol></section>
+      <div class="section-head"><h2>Defensive philosophy</h2></div>
+      <section class="card note-item"><p>${esc(P.defPhilosophy)}</p></section>
+      ${noteList('Absolutes', P.absolutes)}${noteList('Keys', P.keys)}${noteList('Offensive musts', P.musts)}${noteList('Points of emphasis', P.emphasis)}
+      <div class="section-head"><h2>Offensive structure</h2></div>
+      <section class="card note-item"><p>${esc(s.text)}</p></section>
+      <div class="stack" style="gap:8px;margin-top:8px">${s.steps.map((x, i) => noteCard(x, i)).join('')}</div>
+      <div class="section-head"><h2>Offensive rebounding</h2></div>
+      ${noteCard(P.oreb, -1, confirmTag({ ...P.oreb, code: 'OREB' }, true))}`;
+  }
+  const isNum = code => /^\d+$/.test(code);
+  const meaning = c => ({ head: isNum(c.code) ? DATA.decodeCall(c.code) : '', text: c.text || (drill(c.play) || {}).name || '' });
+  const callChips = c => chipsFor(c.drills || (c.play ? [c.play] : []));
+  const callRow = c => { const m = meaning(c); return `<div class="card call-row${ours(c) ? '' : ' dim'}">
+    <button class="call-main" data-act="call" data-code="${esc(c.code)}"><span class="code${isNum(c.code) ? '' : ' word'}">${esc(c.code)}</span>
+      <span class="mean">${m.head ? `<b>${esc(m.head)}</b>` : ''}${m.text ? `<span>${esc(m.text)}</span>` : ''}</span></button>
+    <div class="call-foot">${runsAt(P.fromOf(c), true)}${confirmTag(c)}</div>${callChips(c)}</div>`; };
+  function callSheet(code) {
+    const c = P.calls.find(x => x.code === code), m = meaning(c);
+    return `<div class="call-big${isNum(code) ? '' : ' word'}">${esc(code)}</div>${m.head ? `<h2>${esc(m.head)}</h2>` : ''}${m.text ? `<p class="call-text">${esc(m.text)}</p>` : ''}
+      ${progRow(c)}${callChips(c)}<button class="btn block" style="margin-top:16px" data-act="closesheet">Close</button>`;
+  }
+  const flashCards = () => P.calls.filter(c => ['number', 'full', 'example'].includes(c.kind) || allCalls || ours(c));
+  function viewCalls() {
+    const list = P.calls.filter(c => allCalls || ours(c));
+    const secs = [['Half-court numbers', ['number']], ['Full court', ['full', 'example']], ['Calls', ['call']], ['Specials', ['special']]];
+    return `<div class="calls-bar"><button class="btn primary" data-act="flash">Flashcards</button>
+        <button class="chip ${allCalls ? 'on' : ''}" data-act="callsall" aria-pressed="${allCalls}">Show all</button></div>
+      <p class="muted small" style="margin:10px 0 0">${allCalls ? 'Every number and call in the program. Faded ones are not in Our Package.' : `Our Package for ${esc(teamName(state.team))}: ${list.length} of ${P.calls.length}. Tap one for the full meaning.`}</p>
+      ${secs.map(([t, kinds]) => { const rows = list.filter(c => kinds.includes(c.kind)); return rows.length ? `<div class="section-head"><h2>${t}</h2></div><div class="stack" style="gap:8px">${rows.map(callRow).join('')}</div>` : ''; }).join('')}`;
+  }
+  function openFlash() {
+    flash = { cards: flashCards(), i: 0, flip: false };
+    const ov = document.createElement('div');
+    ov.className = 'overlay flash'; ov.id = 'flash';
+    ov.setAttribute('role', 'dialog'); ov.setAttribute('aria-label', 'Flashcards');
+    document.body.appendChild(ov);
+    paintFlash('flip'); // focus the card so keyboard and screen reader users start inside the overlay
+  }
+  function paintFlash(focus) {
+    const ov = $('#flash');
+    if (!ov) return;
+    const c = flash.cards[flash.i], m = meaning(c);
+    ov.innerHTML = `<div class="overlay-bar"><button class="icon-btn ghost" data-act="closeflash" aria-label="Close">${I.back}</button>
+        <div class="ttl">Flashcards</div><span class="num fc-count">${flash.i + 1} / ${flash.cards.length}</span></div>
+      <div class="flash-body">
+        <button class="flashcard${flash.flip ? ' back' : ''}" data-act="flip" aria-live="polite">${flash.flip
+          ? `<span class="fc-code">${esc(c.code)}</span>${m.head ? `<b>${esc(m.head)}</b>` : ''}${m.text ? `<span class="fc-text">${esc(m.text)}</span>` : ''}`
+          : `<span class="fc-front${isNum(c.code) ? '' : ' word'}">${esc(c.code)}</span><small>Tap to see what it means</small>`}</button>
+        <div class="flash-ctl"><button class="btn big" data-act="shuffle">Shuffle</button><button class="btn primary big" data-act="fnext">${I.next}Next</button></div>
+      </div>`;
+    if (focus) $(`[data-act="${focus}"]`, ov).focus();
+  }
+  const closeFlash = () => { if (navigatedIn && location.hash === '#flash') history.back(); else location.hash = 'notes'; };
+  const our5Sheet = () => {
+    const kinds = [...new Set(P.our5Options.map(o => o.kind))], stale = state.our5.filter(t => !P.our5Options.some(o => o.t === t));
+    const chip = t => `<button class="chip ${state.our5.includes(t) ? 'on' : ''}" data-act="our5" data-v="${esc(t)}" aria-pressed="${state.our5.includes(t)}">${state.our5.includes(t) ? I.check.replace('<svg', '<svg width="15" height="15"') : ''}${esc(t)}</button>`;
+    return `<h2>Our 5</h2><p class="muted" style="margin:0">Pick up to 5. <b class="num">${state.our5.length}/5</b> picked.</p>
+      ${kinds.map(k => `<div class="eyebrow pick5-h">${esc(k)}s</div><div class="pick5">${P.our5Options.filter(o => o.kind === k).map(o => chip(o.t)).join('')}</div>`).join('')}
+      ${stale.length ? `<div class="eyebrow pick5-h">Older picks</div><div class="pick5">${stale.map(chip).join('')}</div>` : ''}
+      <button class="btn primary block" style="margin-top:16px" data-act="closesheet">Done</button>`;
+  };
   function viewNotes() {
-    const tabs = [['blueprint', 'Practice blueprint'], ['offense', 'Offense install'], ['defense', 'Defense'], ['positions', 'Guards & posts'], ['readiness', 'HS readiness']];
+    const tabs = [['program', 'Program'], ['calls', 'Calls & Numbers'], ['blueprint', 'Practice blueprint'], ['offense', 'Offense install'], ['defense', 'Defense'], ['positions', 'Guards & posts'], ['readiness', 'HS readiness']];
     let body = '';
-    if (notesTab === 'blueprint') {
+    if (notesTab === 'program') body = viewProgram();
+    else if (notesTab === 'calls') body = viewCalls();
+    else if (notesTab === 'blueprint') {
       body = `<section class="card" style="padding:16px 18px;overflow-x:auto"><table class="bp-table"><thead><tr><th>Block</th><th>Min</th><th>Pull drills from</th></tr></thead><tbody>
         ${DATA.blueprint.map(b => `<tr><td>${esc(b.block)}</td><td class="m num">${esc(b.min)}</td><td><div class="row" style="gap:6px">${b.cats.map(c => c.includes('-') ? chipsFor([c]) : `<a class="cat-code" style="${gc(c)};text-decoration:none" href="#cat-${c}">${c}</a>`).join('')}</div></td></tr>`).join('')}
         </tbody></table>
@@ -760,7 +919,7 @@
       const src = notesTab === 'offense' ? DATA.plays : DATA.defense;
       body = src.map(sec => `<div class="section-head"><h2>${esc(sec.title)}</h2><span class="muted num">${sec.items.filter(x => x.title && state.installed[notesTab + ':' + sec.title + ':' + x.title]).length}/${sec.items.filter(x => x.title).length} installed</span></div>
         <div class="stack" style="gap:8px">${sec.items.map((x, i) => x.sub ? `<div class="eyebrow" style="margin-top:6px">${esc(x.sub)}</div>` : `
-          <section class="card note-item"><div class="top"><span class="n">${esc(x.n || i + 1)}</span><b>${esc(x.title)}</b>${installBtn(notesTab + ':' + sec.title + ':' + x.title)}</div>
+          <section class="card note-item"><div class="top"><span class="n">${esc(x.n || i + 1)}</span><b>${esc(x.title)}</b>${confirmTag({ ...x, code: notesTab + ':' + x.title }, true)}${installBtn(notesTab + ':' + sec.title + ':' + x.title)}</div>
           ${x.staff ? `<div class="staff">${esc(x.staff)}</div>` : ''}${x.text ? `<p>${esc(x.text)}</p>` : ''}${x.drills.length ? chipsFor(x.drills) : ''}</section>`).join('')}</div>`).join('');
     } else if (notesTab === 'positions') {
       body = DATA.positions.map(sec => `<div class="section-head"><h2>${esc(sec.title)}</h2></div><div class="stack" style="gap:8px">${sec.items.map(x => `
@@ -777,7 +936,7 @@
 
   // ---------- events ----------
   const ACT = {
-    open: el => goDrill(el.dataset.id),
+    open: el => { closeSheet(); goDrill(el.dataset.id); },
     closedetail: () => closeDetail(),
     bplay: el => { const c = el.closest('.board-scope')._ctl; c.playing ? c.pause() : c.play(); },
     bstep: el => el.closest('.board-scope')._ctl.go(+el.dataset.i),
@@ -864,6 +1023,42 @@
     },
     ntab: el => { notesTab = el.dataset.v; render(); },
     install: el => { const k = el.dataset.k; state.installed[k] = !state.installed[k]; save(); },
+    value: el => { libValue = el.dataset.v; repaintLib(el); },
+    team: el => { state.team = el.dataset.v; save(); toast(`Our team: ${P.LEVEL_NAMES[state.team]}. Our Package updated.`); },
+    goteam: () => { notesTab = 'program'; location.hash = 'notes'; if (view === 'notes') render(); },
+    pick5: () => { sheet(our5Sheet()).firstChild.classList.add('pick5-sheet'); },
+    our5: el => {
+      const t = el.dataset.v, i = state.our5.indexOf(t);
+      if (i >= 0) state.our5.splice(i, 1);
+      else if (state.our5.length >= 5) { toast('Our 5 is full. Tap one to take it off.'); return; }
+      else state.our5.push(t);
+      save();
+      const sh = $('.pick5-sheet');
+      if (sh) sh.innerHTML = our5Sheet();
+    },
+    closesheet: () => closeSheet(),
+    runs: el => {
+      const k = el.dataset.k, it = itemByKey(k);
+      if (!it) return;
+      state.runs[k] = !ours(it);
+      save(); repaintOpen();
+      toast(state.runs[k] ? 'Added to Our Package' : 'Taken out of Our Package');
+    },
+    confirm: el => {
+      if (!el.dataset.armed) { el.dataset.armed = 1; el.textContent = 'Tap again: confirmed'; return; }
+      state.confirmed[el.dataset.k] = true; save(); repaintOpen(); toast('Marked confirmed by the staff');
+    },
+    call: el => { sheet(callSheet(el.dataset.code)).firstChild.dataset.code = el.dataset.code; },
+    callsall: () => { allCalls = !allCalls; render(); },
+    flash: () => { navigatedIn = true; location.hash = 'flash'; },
+    closeflash: () => closeFlash(),
+    flip: () => { flash.flip = !flash.flip; paintFlash('flip'); },
+    fnext: () => { flash.i = (flash.i + 1) % flash.cards.length; flash.flip = false; paintFlash('fnext'); },
+    shuffle: () => {
+      const a = flash.cards;
+      for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+      flash.i = 0; flash.flip = false; paintFlash('shuffle'); toast('Shuffled');
+    },
   };
   function repaintLib(el) {
     if (el.closest('#picker')) { paintPicker(); return; }
@@ -891,7 +1086,7 @@
     } else if (el.dataset.search) {
       libQuery = el.value;
       if (el.dataset.search === 'pick') $('#pickres').innerHTML = results(true, pick.showAll ? null : pick.cats);
-      else if (!catOpen) $('#libres').innerHTML = libQuery || libLevel || libCollege ? results(false) : groupsGrid();
+      else if (!catOpen) $('#libres').innerHTML = libQuery || libLevel || libCollege || libValue ? results(false) : groupsGrid();
     } else if (el.dataset.note) {
       const v = el.value.trim();
       if (v) state.notes[el.dataset.note] = el.value; else delete state.notes[el.dataset.note];
@@ -904,6 +1099,7 @@
   document.addEventListener('keydown', e => {
     if (e.key !== 'Escape') return;
     if ($('.sheet-backdrop')) closeSheet();
+    else if ($('#flash')) closeFlash();
     else if ($('#drillform')) $('#drillform').remove();
     else if ($('#detail')) closeDetail();
     else if ($('#picker')) closePicker();

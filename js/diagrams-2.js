@@ -184,7 +184,7 @@ Object.assign(DIAGRAMS, {
     s: [
       ['Wings V-cut. Defenders deny (hand and foot in the lane, thumb down) and force the catch out high.',
         [['c', '1', [12, 11], [18.5, 22]], ['c', 'x1', [10, 13.5], [15, 20.5]], ['c', '2', [-12, 11], [-18.5, 22]], ['c', 'x2', [-10, 13.5], [-15, 20.5]], ['p', 'c', '1']]],
-      ['On the catch: take away the middle and push baseline. Off-ball defender slides to the midline.', [['c', 'x1', [16.5, 23.5]], ['c', 'x2', [-2, 15]]]],
+      ['On the catch: stop the ball and never give up the baseline. Off-ball defender slides to the midline.', [['c', 'x1', [16.5, 23.5]], ['c', 'x2', [-2, 15]]]],
       ['Skip pass: closeout, while the other defender sprints to help.', [['p', '1', '2'], ['c', 'x2', [-16, 20.5]], ['c', 'x1', [2, 15]]]],
       ['Advance: coach drives (stay in deny, plug with your butt), then add a baseline drive.', []],
     ],

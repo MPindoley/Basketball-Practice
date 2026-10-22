@@ -172,11 +172,11 @@ Object.assign(DIAGRAMS, {
 
   // ---------- TD: Team Defense ----------
   'TD-21': {
-    p: { '1*': [-4, 44], 2: 'rw', 3: 'lw', 4: 'rc', 5: 'rb', x1: [-3.5, 40.5], x2: [14, 21], x3: [-14, 21], x4: [15, 7] },
+    p: { '1*': [-4, 44], 2: 'rw', 3: 'lw', 4: 'rc', 5: 'rb', x1: [-3.5, 40.5], x2: [12, 17], x3: [-12, 17], x4: [15, 7] },
     n: [['nobody guards 5', [12, 34]]],
     s: [
-      ['1 dribbles across. One pass away, deny "on the line." Two passes away, sit on the help line.',
-        [['d', '1', [0, 29]], ['c', 'x1', [0, 25.5]], ['c', 'x2', [14.4, 19.6]], ['c', 'x3', [-14.4, 19.6]], ['c', 'x4', [9, 3.5], [3, 6.5]]]],
+      ['1 dribbles across. Everyone off the ball sits on or inside the pack line, a foot in the lane on the back side. No denial.',
+        [['d', '1', [0, 29]], ['c', 'x1', [0, 25.5]], ['c', 'x2', [10.5, 15.5]], ['c', 'x3', [-10.5, 15.5]], ['c', 'x4', [9, 3.5], [3, 6.5]]]],
       ['1 passes to the wing (never straight to 5). x3, the weak-side wing defender, drops to cover 5: "I\'ve got the post!" Everyone moves on the pass.',
         [['c', '2', [19, 22.5]], ['c', 'x2', [14.8, 21.2], [16.8, 20.4]], ['p', '1', '2'], ['c', 'x1', [2.7, 27.6]], ['c', 'x3', [9, 10.6]], ['c', 'x4', [10, 4], [19.5, 5.5]]]],
       ['Skip pass to 3: x3 stays on 5, x1 scrambles out to the new ball, and x2 and x4 drop to the help line. Move while the pass is in the air.',
@@ -187,16 +187,15 @@ Object.assign(DIAGRAMS, {
   'TD-22': {
     p: { 'c*': [0, 30], c2: [-13, 19.5], 5: [-9, 17], 4: [9, 17], 3: [-5, 7], 2: [5, 7], x3: [-3.8, 9.3], x2: [3.8, 9.3], x5: [-7.2, 14.6], x4: [7.2, 14.6] },
     s: [
-      ['Screeners\' defenders call it early: "Screen left!" "Screen right!" 5 and 4 screen down. Bump the cutter; the cutter\'s defender stays attached.',
+      ['Talk early: "Screen! Switch!" 5 and 4 screen down. The cutters\' defenders jump below and take the screeners; the screeners\' defenders take the cutters.',
         [['s', '5', [-6, 11]], ['s', '4', [6, 11]], ['c', 'x5', [-4.6, 13.2]], ['c', 'x4', [4.6, 13.2]], '|',
-          ['c', '3', [-8.5, 10]], ['c', 'x3', [-4.4, 9.4]], ['c', '2', [8.5, 10]], ['c', 'x2', [4.4, 9.4]], '|',
-          ['c', '3', [-10.5, 13.5]], ['c', 'x3', [-6.5, 8.6], [-8.6, 10.4]], ['c', 'x5', [-8.4, 14.6]],
-          ['c', '2', [13, 15], [17.5, 21.5]], ['c', 'x2', [6.5, 8.6], [8.6, 10.4], [10.5, 12.5], [15.3, 19.2]], ['c', 'x4', [8.5, 15]]]],
-      ['A coach sets a second screen, so 3 comes off two. x3 fights through again, the screeners\' defenders get back, and the other coach hits 3.',
-        [['s', 'c2', [-11, 18.5]], ['c', '3', [-14, 17], [-17.5, 21.5]], ['c', 'x3', [-11, 13], [-13.8, 16], [-15.2, 19.3]], ['p', 'c', '3'],
-          ['c', 'x5', [-3.5, 13], [-3.6, 9.6]], ['c', 'x4', [3.5, 13], [3.8, 9.6]]]],
+          ['c', '3', [-8.5, 10]], ['c', 'x3', [-4.2, 8.6]], ['c', '2', [8.5, 10]], ['c', 'x2', [4.2, 8.6]], ['c', 'x5', [-7.4, 13.4]], ['c', 'x4', [7.4, 13.4]], '|',
+          ['c', '3', [-10.5, 13.5]], ['c', '2', [13, 15], [17.5, 21.5]], '|',
+          ['c', 'x5', [-8.3, 11.8]], ['c', 'x4', [11.5, 16], [15.4, 19.6]]]],
+      ['A coach sets a second screen nobody guards. x5, now on 3, jumps below it and gets through himself. The other coach hits 3.',
+        [['s', 'c2', [-11, 18.5]], ['c', '3', [-14, 17], [-17.5, 21.5]], ['c', 'x5', [-11.8, 14.2], [-14.4, 17.4], [-15.4, 19.4]], ['p', 'c', '3']]],
       ['3 tries to catch and score. The defense must get 4 stops to get out; then a new group of 4 comes in on defense.',
-        [['d', '3', [-17, 12], [-12, 8]], ['c', 'x3', [-14.5, 12], [-9.6, 7.4]], '|', ['sh', '3']]],
+        [['d', '3', [-17, 12], [-12, 8]], ['c', 'x5', [-14.5, 12], [-9.6, 7.4]], '|', ['sh', '3']]],
     ],
   },
   'TD-23': {
