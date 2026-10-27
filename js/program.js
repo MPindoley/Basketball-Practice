@@ -424,5 +424,10 @@
         focus: 'Communication + Intelligence + Effort: win the 50/50 balls, talk on every action, create chaos, and value every possession. Every drill is scored.',
         message: 'Be the hammer, not the nail.',
         items: ['WU-01', 'LM-01', 'LM-03', 'BR-01', 'RB-06', 'TD-04', 'BR-01', 'LM-06', 'LM-04', 'TD-23', 'BR-01', 'LM-05', 'SH-10', 'BR-02'] },
+      // Tryouts and open gyms: live and scored, no plays, sets or defense calls to install.
+      { id: 'plan9', name: 'Tryout Day', title: 'Tryout Day: High Intensity, Everything Scored',
+        focus: 'Tryouts and open gyms: keep it live and score everything. Grade effort and toughness, skill, basketball IQ and talk. No plays or sets.',
+        message: 'Dominate effort plays.',
+        items: ['WU-01', 'WU-04', 'FC-02', 'BH-08', 'BR-01', 'SS-01', 'LM-01', 'RB-06', 'BR-01', 'TR-22', 'CG-03', 'BR-01', 'LM-02', 'LM-04', 'BR-02'] },
     );
 })();
