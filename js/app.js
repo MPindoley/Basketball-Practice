@@ -23,6 +23,8 @@
     up: ic('<path d="M12 19V5M6 11l6-6 6 6"/>'),
     down: ic('<path d="M12 5v14M6 13l6 6 6-6"/>'),
     swap: ic('<path d="M4 8h14l-3.5-3.5M20 16H6l3.5 3.5"/>'),
+    shuffle: ic('<path d="M3 7h3.5c2.6 0 4 1.6 5.5 5s2.9 5 5.5 5H21M3 17h3.5c1.4 0 2.5-.6 3.4-1.6M14.1 8.6c.9-1 2-1.6 3.4-1.6H21M18 4l3 3-3 3M18 14l3 3-3 3"/>'),
+    undo: ic('<path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/>'),
     trash: ic('<path d="M4 7h16M9.5 7V4.5h5V7M6.5 7l1 13h9l1-13"/>'),
     list: ic('<path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1"/><circle cx="4.5" cy="12" r="1"/><circle cx="4.5" cy="18" r="1"/>'),
     copy: ic('<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5.5A1.5 1.5 0 0 0 14.5 4h-9A1.5 1.5 0 0 0 4 5.5v9A1.5 1.5 0 0 0 5.5 16H8"/>'),
@@ -281,6 +283,9 @@
           ? vals.map(([v, n]) => `<span><b>${v}</b> <span class="num">${n}</span></span>`).join('<i>·</i>')
           : '<span class="muted">No mentality drills yet.</span> <a href="#cat-LM">Add one from Lake Mentality</a>'}</div>
       </section>
+      ${p.items.length ? `<div class="plan-shuffle"><button class="btn small" data-act="pshuffle">${I.shuffle}Shuffle drills</button>
+        ${unshuffle && unshuffle.id === p.id && unshuffle.after === JSON.stringify(p.items) ? `<button class="btn small" data-act="unshuffle">${I.undo}Undo shuffle</button>` : ''}
+        <span class="muted">Same blocks and minutes, new drills</span></div>` : ''}
       <div class="timeline">${rows || `<div class="card empty"><h3>No drills yet</h3><p>Add drills from the library, or start from a template.</p><button class="btn primary" data-act="newplan">Start from a template</button></div>`}</div>
       <div class="plan-actions">
         <button class="btn" data-act="add">${I.plus}Add drill</button>
@@ -294,6 +299,7 @@
         <button class="btn small" data-act="move" data-i="${i}" data-d="-1" ${i === 0 ? 'disabled' : ''}>${I.up}Up</button>
         <button class="btn small" data-act="move" data-i="${i}" data-d="1" ${i === cur().items.length - 1 ? 'disabled' : ''}>${I.down}Down</button>
         <button class="btn small" data-act="swap" data-i="${i}">${I.swap}${it.d ? 'Swap drill' : 'Pick drill'}</button>
+        ${movable(it) ? `<button class="btn small" data-act="reroll" data-i="${i}">${I.shuffle}Shuffle</button>` : ''}
         <button class="btn small" data-act="remove" data-i="${i}">${I.trash}Remove</button></div>` : '';
     const side = `<div class="side">${stepper(i, it.min)}<button class="icon-btn ghost" data-act="tools" data-i="${i}" aria-label="More options" aria-expanded="${toolsOpen === i}">${I.more}</button></div>`;
     if (!it.d) {
@@ -322,6 +328,27 @@
     });
     return lines.join('\n');
   }
+
+  // ---------- shuffle: new drills that do the same job, so a template's shape stays sound ----------
+  // Same job = same category and side (a blueprint block keeps its own categories). Free-throw drills trade only with each other,
+  // plays only with plays of the same type (or OB kind) in Our Package. Water, the huddle, the dynamic warm-up and drills marked
+  // shuffle: false (js/program.js) never move and are never picked; minutes stay put.
+  const jobOf = d => d.cat === 'BR' || d.id === 'WU-01' || d.shuffle === false ? null
+    : /free throw/i.test(d.name) ? 'FT'
+    : d.cat === 'PL' ? 'PL:' + d.type
+    : d.cat === 'OB' ? 'OB:' + (/SLOB/.test(d.name) ? 'side' : /BLOB/.test(d.name) ? 'base' : 'press')
+    : d.cat + (d.side ? ':' + d.side : '');
+  const movable = it => !it.d || !!jobOf(drill(it.d) || { cat: 'BR' });
+  function reroll(it, used) {
+    if (!movable(it)) return it;
+    const job = it.d && jobOf(drill(it.d));
+    const fits = it.cats ? d => d.cat !== 'BR' && d.shuffle !== false && it.cats.some(c => c === d.cat || c === d.id) : d => jobOf(d) === job;
+    const pool = allDrills().filter(d => !used.has(d.id) && fits(d) && (!BOOK.has(d.cat) || ours(d)));
+    const near = pool.filter(d => Math.abs(d.min - it.min) <= 4);
+    const from = near.length ? near : pool;
+    return from.length ? { ...it, d: from[Math.floor(Math.random() * from.length)].id } : it;
+  }
+  let unshuffle = null; // the drills before the last shuffle; Undo shows only until the plan changes again
 
   // ---------- library ----------
   function matches(d) {
@@ -949,6 +976,24 @@
       [items[i], items[j]] = [items[j], items[i]]; toolsOpen = j; save();
     },
     remove: el => { cur().items.splice(+el.dataset.i, 1); toolsOpen = -1; save(); },
+    pshuffle: () => {
+      const p = cur(), used = new Set(p.items.map(it => it.d).filter(Boolean)), before = JSON.parse(JSON.stringify(p.items));
+      let n = 0;
+      p.items = p.items.map(it => { const nx = reroll(it, used); if (nx !== it) { n++; used.add(nx.d); } return nx; });
+      if (!n) { toast('No other drills fit these blocks'); return; }
+      unshuffle = { id: p.id, items: before, after: JSON.stringify(p.items) };
+      toolsOpen = -1; save(); toast(`${n} new drills. Same blocks, same minutes.`);
+    },
+    unshuffle: () => {
+      const p = cur();
+      if (!unshuffle || unshuffle.id !== p.id) return;
+      p.items = unshuffle.items; unshuffle = null; save(); toast('Your drills are back');
+    },
+    reroll: el => {
+      const p = cur(), i = +el.dataset.i, nx = reroll(p.items[i], new Set(p.items.map(it => it.d).filter(Boolean)));
+      if (nx === p.items[i]) { toast('No other drill fits this spot'); return; }
+      p.items[i] = nx; save(); toast(`${drill(nx.d).name} is in`);
+    },
     swap: el => {
       const it = cur().items[+el.dataset.i], d = it.d && drill(it.d);
       openPicker({ mode: it.d ? 'swap' : 'slot', i: +el.dataset.i, cats: d ? (GROUP[d.cat] || { cats: [d.cat] }).cats : it.cats, label: d ? 'swap ' + d.name : it.slot });

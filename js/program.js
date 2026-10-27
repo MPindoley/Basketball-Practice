@@ -430,4 +430,10 @@
         message: 'Dominate effort plays.',
         items: ['WU-01', 'WU-04', 'FC-02', 'BH-08', 'BR-01', 'SS-01', 'LM-01', 'RB-06', 'BR-01', 'TR-22', 'CG-03', 'BR-01', 'LM-02', 'LM-04', 'BR-02'] },
     );
+
+  // ---------- Shuffle (js/app.js) trades a drill only for one that does the same job ----------
+  // Lake Breakdowns hold offense and defense, so the offense ones get their own side: a D install stays a D install.
+  ['LB-08', 'LB-09'].forEach(id => patch(id, { side: 'offense' }));
+  // The deny drills are only for the FULL DENY special, so Shuffle never picks them.
+  ['TD-06', 'PD-09'].forEach(id => patch(id, { shuffle: false }));
 })();

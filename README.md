@@ -2,7 +2,7 @@
 
 A practice planning app for the 7th & 8th grade team, built from the *MS Basketball Drill & Practice Book* spreadsheet. It works on a phone, a tablet, or a computer, and keeps working offline once it has loaded.
 
-- **Plan**: build today's practice from the four sample plans, the 90-minute blueprint (one block per drill group, tap a block to pick its drill), or from scratch. Start times and the end time update as you change minutes or reorder.
+- **Plan**: build today's practice from a template (the sample plans, the Lake installs, Game Week, Compete Day and Tryout Day), the 90-minute blueprint (one block per drill group, tap a block to pick its drill), or from scratch. Start times and the end time update as you change minutes or reorder. **Shuffle drills** swaps in different drills that do the same job (same category, the same kind of play, free throws for free throws) and keeps every block and its minutes, so the template stays sound; Undo puts the old drills back. Each drill's ⋯ menu has its own Shuffle.
 - **Drills**: all drills by group (spreadsheet, college and full-court timed drills), with search and level/college filters. Every drill opens to an animated whiteboard that walks through the drill step by step, plus setup, how it runs, coaching points, the MS adaptation, and your own notes.
 - **Run**: runs the practice live. A big countdown for each drill, a beep at 1 minute left and a triple beep at time, "on pace / behind" against the plan, the drill's whiteboard on a loop, coaching points, and what's up next. The screen stays awake while it runs.
 - **Board**: a blank half or full court to draw on with your finger during a timeout or a drill.

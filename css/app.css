@@ -246,6 +246,8 @@ svg.wb.mini .ln { stroke-width: .4; }
 @media (min-width: 640px) { .plan-meta { grid-template-columns: repeat(4, minmax(0, 1fr)); } .plan-meta .wide { grid-column: span 2; } }
 
 .timeline { display: flex; flex-direction: column; gap: 8px; margin-top: 16px; }
+.plan-shuffle { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 14px; }
+.plan-shuffle .muted { font-size: 14px; }
 .item { display: grid; grid-template-columns: 62px 1fr auto; align-items: stretch; background: var(--surface); border-radius: 12px; box-shadow: var(--shadow); overflow: hidden; }
 .item .time { padding: 12px 0 12px 12px; font: 700 17px/1 var(--display); color: var(--muted); }
 .item .time small { display: block; font: 600 11px/1 var(--body); margin-top: 5px; color: var(--faint); }
