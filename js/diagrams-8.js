@@ -1,25 +1,43 @@
 // Drill diagrams, part 8: the Lake Flyers program (js/program.js). Format: see diagrams-1.js.
 Object.assign(DIAGRAMS, {
-  'ZN-04': {
-    p: { '1*': [0, 29], 2: [17, 19], 3: [-17, 19], 4: [-21.5, 3], 5: [7.5, 8.5],
-      x1: [0, 25.5], x2: [14.2, 17.2], x3: [-14.2, 17.2], x4: [-18.6, 4.4], x5: [5.5, 11] },
-    c: [['rim', 16, 'Pack line']],
-    n: [['X = us · numbers = scout team', [0, 41]]],
-    s: [
-      ['1 · Man: x1 pressures the ball, nose on the ball, an arm\'s length away. Everyone else sinks to the pack line: on or inside 16 feet.',
-        [['c', 'x2', [10.5, 15.2]], ['c', 'x3', [-10.5, 15.2]], ['c', 'x4', [-9.5, 7]]]],
-      ['1 passes to 2. No denial: let him catch it. Everyone jumps to the ball on the flight: x2 closes out, x1 drops to the gap, the back side gets a foot in the lane.',
-        [['p', '1', '2'], ['c', 'x2', [14.6, 16.7]], ['c', 'x1', [4.5, 20]], ['c', 'x3', [-5, 13.5]], ['c', 'x4', [-4, 7]], ['c', 'x5', [9.6, 10.6]]]],
-      ['2 drives middle, never baseline. x1 steps in and walls up, thumbs in the ears. 2 picks it up and kicks it to 1: x1 recovers, everyone jumps back.',
-        [['d', '2', [12.5, 18.8], [9.2, 18.4]], ['c', 'x2', [11, 15.8]], ['c', 'x1', [6.4, 17.4]], '|',
-          ['p', '2', '1'], ['c', 'x1', [0, 25.5]], ['c', '2', [17, 19]], ['c', 'x2', [10.5, 15.2]], ['c', 'x3', [-10.5, 15.2]], ['c', 'x4', [-9.5, 7]], ['c', 'x5', [8.5, 11.5]]]],
-      ['Ball screen: x5 calls it early. Switch! x5 takes the ball, x1 takes the roller. Come together and receive. Guard on a big: arm and leg in front, high side.',
-        [['s', '5', [6.5, 17], [3, 25.8]], ['c', 'x5', [6.4, 17], [6.6, 23]], '|',
-          ['d', '1', [3.5, 29.8], [7.5, 28], [9.6, 24.6]], ['c', 'x5', [8.3, 21.9]],
-          ['c', '5', [1.5, 18], [1.8, 10.5]], ['c', 'x1', [-1.2, 19], [-0.6, 12]], '|',
-          ['c', 'x1', [0.8, 14.2], [3.2, 13]], ['c', 'x3', [-6, 13.5]], ['c', 'x4', [-3, 7.5]]]],
-    ],
-  },
+  // Spots by where the ball is. One pass away: in the gap on the pack line. Two or more: on or over the midline.
+  'ZN-04': (() => {
+    const X = (pos, ...more) => [...Object.entries(pos).map(([k, v]) => ['c', 'x' + k, v]), ...more];
+    const TOP = { 1: [0, 25.8], 2: [9.5, 17.5], 3: [-9.5, 17.5], 4: [-7, 7.5], 5: [7, 7.5] };
+    const RW = { 2: [14.6, 17], 1: [5.5, 20.2], 5: [14, 8], 3: [0, 15], 4: [0.8, 8] };
+    const RC = { 5: [18.8, 4.6], 2: [13.5, 12.5], 1: [1, 17.5], 3: [1, 12], 4: [2, 7] };
+    const LW = { 3: [-14.6, 17], 1: [-5.5, 20.2], 4: [-14, 8], 2: [0, 15], 5: [-0.8, 8] };
+    const LC = { 4: [-18.8, 4.6], 3: [-13.5, 12.5], 1: [-1, 17.5], 2: [-1, 12], 5: [-2, 7] };
+    return {
+      p: { '1*': [0, 29], 2: [17, 19], 3: [-17, 19], 4: [-21.5, 3], 5: [21.5, 3],
+        x1: [0, 25.5], x2: [14.2, 17.2], x3: [-14.2, 17.2], x4: [-18.6, 4.4], x5: [18.6, 4.4] },
+      c: [['rim', 16, '']],
+      z: [[[-0.2, 0], [0.2, 31]]],
+      n: [['Midline', [0, 33.5]], ['Pack line', [15, 23.5]], ['X = us · numbers = scout team', [0, 41]]],
+      s: [
+        ['Ball at the top: x1 is on the ball, nose on the ball, an arm\'s length away. x2 and x3 are one pass away: in the gap, on the pack line. x4 and x5 sink, a foot in the lane.',
+          X(TOP)],
+        ['Ball on the wing: x2 closes out. x1 and x5 are one pass away: in the gaps, on the pack line, no denial. Back side: x3 and x4 sprint to the midline, on it or over it.',
+          X(RW, ['p', '1', '2'])],
+        ['Ball in the corner: x5 closes out and takes away the baseline. x2 is in the gap. Now x1 is two passes away too: x1, x3 and x4 are all on or over the midline.',
+          X(RC, ['p', '2', '5'])],
+        ['Reverse it, corner to wing to top. Everyone moves on the flight of every pass, back to the spot for where the ball is now.',
+          [...X(RW, ['p', '5', '2']), '|', ...X(TOP, ['p', '2', '1'])]],
+        ['Other side, same rules. Ball on the left wing: x3 closes out, x1 and x4 are in the gaps, and now x2 and x5 are the back side: on or over the midline.',
+          X(LW, ['p', '1', '3'])],
+        ['Ball in the left corner: x4 closes out, no baseline. x3 is in the gap. x1, x2 and x5 are two or more passes away: all on or over the midline.',
+          X(LC, ['p', '3', '4'])],
+        ['4 kicks it out and 3 drives middle, never baseline. x1 steps in and walls up, thumbs in the ears. 3 picks it up and passes to 1: x1 recovers, everyone jumps back.',
+          [...X(LW, ['p', '4', '3']), '|', ['d', '3', [-12.5, 18.8], [-9.2, 18.4]], ['c', 'x3', [-11, 15.8]], ['c', 'x1', [-6.4, 17.4]], '|',
+            ...X(TOP, ['p', '3', '1'], ['c', '3', [-17, 19]])]],
+        ['Ball screen: x5 calls it early. Switch! x5 takes the ball, x1 takes the roller. Come together and receive. Guard on a big: arm and leg in front, high side.',
+          [['s', '5', [17, 11], [11.5, 23], [3.2, 25.8]], ['c', 'x5', [8.5, 16], [6.6, 23]], '|',
+            ['d', '1', [3.5, 29.8], [7.5, 28], [9.6, 24.6]], ['c', 'x5', [8.3, 21.9]],
+            ['c', '5', [1.5, 18], [1.8, 10.5]], ['c', 'x1', [-1.2, 19], [-0.6, 12]], '|',
+            ['c', 'x1', [0.8, 14.2], [3.2, 13]], ['c', 'x3', [-6, 13.5]], ['c', 'x4', [-3, 7.5]]]],
+      ],
+    };
+  })(),
   'ZN-05': {
     p: { '1*': [0, 36], 2: [18.5, 21], 3: [-18.5, 21], 4: [-21.5, 3], 5: [7.5, 8.5],
       x1: [0, 24.6], x2: [10, 15], x3: [-10, 15], x4: [-9.5, 7], x5: [8.5, 11.5] },
