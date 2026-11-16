@@ -496,6 +496,29 @@ Object.assign(DIAGRAMS, {
   },
 });
 
+// Laker, from the coach's sheet. Same 4-out start as PL-18: 1 and 4 in the slots, 2 and 3 in the corners, 5 on the block.
+Object.assign(DIAGRAMS, {
+  'PL-19': {
+    p: { '1*': [-9, 27], 4: [9, 27], 2: 'lc', 3: 'rc', 5: 'rb' },
+    s: [
+      ['5 lifts to the pinch post and 2 lifts to the wing. 4 brush cuts off 5 and clears to the weak-side corner. 1 dribbles over and enters the ball to 5.',
+        [['c', '5', [6.5, 18.5]], ['c', '2', [-17, 18]], '|', ['c', '4', [9.5, 21], [4, 11], [-7, 5], 'lc'], ['d', '1', [0, 28]], '|', ['p', '1', '5']]],
+      ['1 and 2 set a double screen away for 4. 4 curls off it into the lane and clears to the far corner as 3 lifts. Then 2 comes off 1 for the three and 1 goes to the wing.',
+        [['s', '2', [-19.5, 8]], ['s', '1', [-10, 24], [-16, 10.5]], ['c', '3', [17, 18]], '|',
+          ['c', '4', [-23, 8], [-21, 13], [-15.5, 15], [-8, 11], [-1, 8], [9, 4], 'rc'], '|',
+          ['c', '2', [-19.5, 13], [-16, 19], [-11, 25]], '|', ['c', '1', [-18, 16]]]],
+      ['Finish left: 5 dribbles at 2 for the handoff. 2 brush cuts off him to the rim. 1 lifts behind 2 and takes the handoff, and 5 rolls to the basket.',
+        [['d', '5', [1, 23], [-5.5, 24.5]], '|', ['c', '2', [-7, 21.5], [-3.5, 17], [-5, 9], [-9, 5]], '|', ['c', '1', [-14, 23], [-9.5, 27]], ['p', '5', '1'], '|', ['c', '5', [-2, 17], [1.5, 10]]]],
+      // The first beat puts everyone back in the pinch-post picture, so the other finish starts from the same spots.
+      ['Or, from the same picture, finish right: 3 sets the hammer screen for 4, who curls. 5 dribbles right, hands off to 3, and rolls to the basket.',
+        [['m', '5', [6.5, 18.5]], ['m', '2', [-11, 25]], ['m', '1', [-18, 16]], ['p', '1', '5'], '|',
+          ['s', '3', [19.5, 9]], '|', ['c', '4', [23, 8], [20.5, 13.5], [14, 13], [7.5, 8]], ['d', '5', [9, 23.5]], '|',
+          ['c', '3', [20, 15], [18, 21], [13.5, 25.5]], ['p', '5', '3'], '|', ['c', '5', [5, 17], [0, 10]]]],
+      ['That is the foundation. From here it is all reads: 5 rolls when the defense gives it, 4 can pop for a three, 2 can screen for a cutter. Take what they give.', []],
+    ],
+  },
+});
+
 // The coach's 5-man transition drill. Going toward the far basket (down the board) a player's left is +x; coming back it is -x.
 (() => {
   const DOWN = { // trips 1, 3, 5: 2 crosses early in front of the ball, 3 crosses behind it
