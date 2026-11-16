@@ -95,7 +95,7 @@
     return p;
   }
   // program settings: our team, "We run this" overrides, Our 5, cleared "Staff to confirm" tags
-  const fresh = () => ({ team: '8', runs: {}, our5: [], confirmed: {} });
+  const fresh = () => ({ team: '8', runs: {}, our5: [], confirmed: {}, sheet: { title: '', ids: [] } }); // sheet: the plays picked for the printed play sheet
   function seed() {
     const p = planFrom('plan1');
     return { v: 1, updated: 0, plans: { [p.id]: p }, current: p.id, custom: {}, notes: {}, installed: {}, sketch: { full: false, h: [], f: [] }, ...fresh() };
@@ -230,7 +230,7 @@
     let v = h, c = null;
     if (h.startsWith('cat-')) { v = 'drills'; c = h.slice(4); }
     if (!['plan', 'drills', 'plays', 'run', 'board', 'notes'].includes(v)) v = 'plan';
-    if ('#' + (h || 'plan') !== lastHash) { closePicker(); closeSheet(); $('#drillform') && $('#drillform').remove(); }
+    if ('#' + (h || 'plan') !== lastHash) { closePicker(); closeSheet(); $('#playsheet') && $('#playsheet').remove(); $('#drillform') && $('#drillform').remove(); }
     lastHash = '#' + (h || 'plan');
     if (v === view && c === catOpen && main.childElementCount) return;
     view = v; catOpen = c; toolsOpen = -1;
@@ -378,7 +378,8 @@
         ${d.college ? `<span><span class="college">${I.star}${esc(d.college)}</span></span>` : ''}
         ${opts.why ? '' : `<small class="muted">${esc(d.players || '')}</small>`}
       </button>
-      <button class="add" data-act="${picking ? 'pick' : 'quickadd'}" data-id="${esc(d.id)}" aria-label="${picking ? 'Use' : 'Add'} ${esc(d.name)}" title="${picking ? 'Use this drill' : 'Add to plan'}">${picking ? I.check : I.plus}</button>
+      ${opts.sheet ? `<button class="add${onSheet(d.id) ? ' on' : ''}" data-act="sheetpick" data-id="${esc(d.id)}" aria-pressed="${onSheet(d.id)}" aria-label="${esc(d.name)} on the play sheet" title="${onSheet(d.id) ? 'Take off the play sheet' : 'Put on the play sheet'}">${onSheet(d.id) ? I.check : I.plus}</button>`
+    : `<button class="add" data-act="${picking ? 'pick' : 'quickadd'}" data-id="${esc(d.id)}" aria-label="${picking ? 'Use' : 'Add'} ${esc(d.name)}" title="${picking ? 'Use this drill' : 'Add to plan'}">${picking ? I.check : I.plus}</button>`}
     </div>`;
   }
   function filterBar(prefix) {
@@ -439,6 +440,7 @@
     const turnedOff = all.filter(d => !d.candidate && d.from && rank(d.from) <= team && !ours(d));
     return `<div class="section-head" style="margin-top:0"><h2>Playbook</h2><button class="chip on" data-act="goteam" aria-label="Our team: ${esc(P.LEVEL_NAMES[state.team])}. Change it in the Program tab">Our team: ${esc(P.LEVEL_NAMES[state.team])}</button></div>
       <p class="muted" style="margin:0">Tap one to see it run, or + to add it to <b>${esc(cur().name)}</b>.</p>
+      <button class="btn" style="margin-top:12px" data-act="playsheet">${I.list}Play sheet for players${sheetIds().length ? ` · ${sheetIds().length} picked` : ''}</button>
       <div class="section-head pkg-head"><h2>Our Package</h2><span class="muted num">${pkg.length} plays &amp; defenses</span></div>
       ${P.TYPES.map(t => grp(P.typeLabels[t], off.filter(d => d.type === t), 'PL')).join('')}
       ${grp('More plays', off.filter(d => !P.TYPES.includes(d.type)), 'PL')}
@@ -452,6 +454,60 @@
       ${fold('options', 'Offense Options', 'Real motion, action and continuity offenses for the staff to choose from. Open one and tap “We run this” to add it to Our Package.', all.filter(d => d.candidate && !ours(d)), { why: true })}
       ${turnedOff.length ? fold('off', 'Turned off', `${esc(teamName(state.team))} would run these, but you switched them off. Open one and tap “We run this” to bring it back.`, turnedOff, { dim: true }) : ''}
       </div>`;
+  }
+
+  // ---------- play sheet: pick plays and defenses, print a handout for the players ----------
+  const bookAll = () => allDrills().filter(d => BOOK.has(d.cat)).sort(bookSort);
+  const sheetIds = () => state.sheet.ids.filter(id => drill(id)); // a deleted custom drill drops off quietly
+  const onSheet = id => state.sheet.ids.includes(id);
+  const sheetTitle = () => state.sheet.title.trim() || `${teamName(state.team)} Play Sheet`;
+  function paintPlaySheet() {
+    const ov = $('#playsheet');
+    if (!ov) return;
+    const all = bookAll(), n = sheetIds().length, y = ov.scrollTop;
+    const grp = (title, list, cat) => list.length ? `<section class="group" style="${gc(cat)}"><h2>${esc(title)}</h2><div class="drill-list">${list.map(d => drillCard(d, false, { sheet: true })).join('')}</div></section>` : '';
+    const mine = all.filter(ours), off = mine.filter(d => d.cat === 'PL');
+    ov.innerHTML = `<div class="overlay-bar"><button class="icon-btn ghost" data-act="closeplaysheet" aria-label="Close">${I.back}</button>
+      <div class="ttl">Play sheet</div><button class="btn primary small" data-act="sheetprint" ${n ? '' : 'disabled'}>Print · ${n}</button></div>
+      <div class="overlay-body">
+        <p class="muted" style="margin:0 0 12px">Tick the plays and defenses the players need to study, then Print. Each one prints with its step-by-step diagrams and coaching points. Your picks are saved.</p>
+        <label class="lbl">Title on the sheet<input class="field" data-sheettitle value="${esc(state.sheet.title)}" placeholder="${esc(sheetTitle())}" maxlength="60"></label>
+        <div class="row" style="gap:8px;margin-top:10px;flex-wrap:wrap"><button class="btn small" data-act="sheetall">Pick all of Our Package</button><button class="btn small" data-act="sheetclear" ${n ? '' : 'disabled'}>Clear</button></div>
+        ${P.TYPES.map(t => grp(P.typeLabels[t], off.filter(d => d.type === t), 'PL')).join('')}
+        ${grp('More plays', off.filter(d => !P.TYPES.includes(d.type)), 'PL')}
+        ${[...BOOK].filter(c => c !== 'PL').map(c => grp(DATA.cats[c], mine.filter(d => d.cat === c), c)).join('')}
+        ${grp('Not in Our Package', all.filter(d => !ours(d)), 'PL')}
+      </div>`;
+    ov.scrollTop = y;
+  }
+  function openPlaySheet() {
+    $('#playsheet') && $('#playsheet').remove();
+    const ov = document.createElement('div');
+    ov.className = 'overlay'; ov.id = 'playsheet';
+    ov.setAttribute('role', 'dialog'); ov.setAttribute('aria-label', 'Play sheet');
+    document.body.appendChild(ov);
+    paintPlaySheet();
+  }
+  const closePlaySheet = () => { $('#playsheet') && $('#playsheet').remove(); if (view === 'plays') render(); };
+  // The handout itself: hidden on screen, the only thing on the page when printing (see @media print in app.css).
+  function printSheetHtml() {
+    const plays = bookAll().filter(d => onSheet(d.id));
+    return `<header class="ps-head"><h1>${esc(sheetTitle())}</h1><p>Lake Flyers · ${esc(teamName(state.team))} · Numbers are offense, X is defense. Each picture is one step: players are where the step starts, arrows show where they go.</p>${LEGEND}</header>
+      ${plays.map(d => {
+        const dg = DIAGRAMS[d.id], pics = dg ? Court.stills({ ...dg, id: d.id }) : d.sketch ? [sketchStatic(d.sketch)] : [];
+        return `<section class="ps-play"><div class="ps-top"><h2>${esc(d.name)}</h2><span>${esc([DATA.cats[d.cat] && d.cat !== 'PL' ? DATA.cats[d.cat] : '', typeName(d)].filter(Boolean).join(' · '))}</span>
+          <p><b>Start:</b> ${esc(d.setup || '')}</p></div>
+          <div class="ps-steps${dg && dg.court === 'f' ? ' full' : ''}">${pics.map((svg, i) => `<figure>${svg}<figcaption>${dg ? `<b>${i + 1}</b> ${esc(dg.s[i][0])}` : ''}</figcaption></figure>`).join('')}</div>
+          ${d.points && d.points.length ? `<ul class="ps-points">${d.points.map(p => `<li>${esc(p)}</li>`).join('')}</ul>` : ''}</section>`;
+      }).join('')}`;
+  }
+  function printPlaySheet() {
+    $('#printsheet') && $('#printsheet').remove();
+    const el = document.createElement('div');
+    el.id = 'printsheet';
+    el.innerHTML = printSheetHtml();
+    document.body.appendChild(el);
+    window.print();
   }
 
   // ---------- picker overlay ----------
@@ -1003,6 +1059,16 @@
     pick: el => choose(el.dataset.id),
     pickall: el => { pick.showAll = el.dataset.v === '1'; paintPicker(); },
     closepicker: () => closePicker(),
+    playsheet: () => openPlaySheet(),
+    closeplaysheet: () => closePlaySheet(),
+    sheetpick: el => {
+      const ids = state.sheet.ids, i = ids.indexOf(el.dataset.id);
+      if (i >= 0) ids.splice(i, 1); else ids.push(el.dataset.id);
+      save(false); paintPlaySheet();
+    },
+    sheetall: () => { state.sheet.ids = [...new Set([...state.sheet.ids, ...bookAll().filter(ours).map(d => d.id)])]; save(false); paintPlaySheet(); },
+    sheetclear: () => { state.sheet.ids = []; save(false); paintPlaySheet(); },
+    sheetprint: () => printPlaySheet(),
     quickadd: el => quickAdd(el.dataset.id),
     level: el => { libLevel = el.dataset.v; repaintLib(el); },
     college: el => { libCollege = !libCollege; repaintLib(el); },
@@ -1128,6 +1194,9 @@
     if (el.dataset.field) {
       cur()[el.dataset.field] = el.value;
       if (el.dataset.field === 'name' || el.dataset.field === 'focus' || el.dataset.field === 'message') save(false);
+    } else if ('sheettitle' in el.dataset) {
+      state.sheet.title = el.value;
+      clearTimeout(noteTimer); noteTimer = setTimeout(() => save(false), 600);
     } else if (el.dataset.search) {
       libQuery = el.value;
       if (el.dataset.search === 'pick') $('#pickres').innerHTML = results(true, pick.showAll ? null : pick.cats);
@@ -1148,6 +1217,7 @@
     else if ($('#drillform')) $('#drillform').remove();
     else if ($('#detail')) closeDetail();
     else if ($('#picker')) closePicker();
+    else if ($('#playsheet')) closePlaySheet();
   });
 
   route();

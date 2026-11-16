@@ -26,6 +26,7 @@ for (const [id, dg] of Object.entries(DIAGRAMS)) {
   let model;
   try { model = Court.build({ ...dg, id }); } catch (e) { fail(e.message); continue; }
   if (!model.steps.length) fail(`${id}: no steps`);
+  if (Court.stills({ ...dg, id }).length !== model.steps.length) fail(`${id}: play sheet stills do not match the steps`);
   const H = model.full ? 94 : 47;
   model.steps.forEach((st, si) => {
     if (!st.text || st.text.length > 170) fail(`${id} step ${si + 1}: caption missing or too long (${st.text.length})`);
