@@ -538,6 +538,25 @@ Object.assign(DIAGRAMS, {
   },
 });
 
+// Bulldog, the coach's press break. Steps 3 and 4 are other entries from the same picture, so they start where step 1 ended.
+Object.assign(DIAGRAMS, {
+  'OB-13': {
+    court: 'f',
+    p: { '3*': [-9, -2.5], 1: [-7, 7], 2: [6.5, 19], 4: [-21, 30], 5: [21, 30] },
+    s: [
+      ['1 screens for 2, then seals and comes back to the ball. 2 comes off the screen to the ball. 4 and 5 V-cut: a step up the floor, then back toward the baseline.',
+        [['s', '1', [4, 16.5]], ['c', '4', [-20, 36], [-21, 20]], ['c', '5', [20, 36], [21, 20]], '|',
+          ['c', '2', [1, 20], [-6, 16], [-8, 9]], '|', ['c', '1', [7, 10]]]],
+      ['Entry to 2 or 1, whoever is open coming to the ball: here it is 2. Everyone else clears out up the floor and 2 brings it up.',
+        [['p', '3', '2'], '|', ['d', '2', [-6, 22], [-3, 40]], ['c', '1', [10, 24], [12, 46]], ['c', '4', [-21, 50]], ['c', '5', [21, 50]], ['c', '3', [-9, 8]]]],
+      ['Or the entry goes to 4 on the sideline. 1 clears up the floor, and 3 steps onto the court as the release man, behind the ball.',
+        [['p', '3', '4'], '|', ['c', '1', [1, 24], [-8, 44]], ['c', '3', [-12, 8]]], 1],
+      ['Or 3 runs the baseline and hits 5 on the other sideline. 2 clears up the floor, and 3 steps onto the court as the release man.',
+        [['c', '3', [10, -2.5]], '|', ['p', '3', '5'], '|', ['c', '2', [-4, 22], [5, 42]], ['c', '3', [13, 8]]], 1],
+    ],
+  },
+});
+
 // The coach's 5-man transition drill. Going toward the far basket (down the board) a player's left is +x; coming back it is -x.
 (() => {
   const DOWN = { // trips 1, 3, 5: 2 crosses early in front of the ball, 3 crosses behind it

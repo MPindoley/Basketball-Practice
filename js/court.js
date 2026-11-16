@@ -92,7 +92,14 @@ const Court = (() => {
       for (const _ of key.match(/\*/g) || []) balls['b' + nb++] = id;
     }
     const ids = Object.keys(pos);
-    const steps = dg.s.map(([text, acts]) => {
+    const ends = [];
+    const steps = dg.s.map(([text, acts, from], i) => {
+      if (from != null) { // an option: go back to where step `from` (1-based) ended
+        if (!ends[from - 1]) throw new Error(`${dg.id}: step ${i + 1} starts from step ${from}, which is not an earlier step`);
+        Object.assign(pos, ends[from - 1].pos);
+        for (const b of Object.keys(balls)) delete balls[b];
+        Object.assign(balls, ends[from - 1].balls);
+      }
       const start = { pos: { ...pos }, balls: { ...balls } };
       const beats = [[]];
       for (const a of acts || []) a === '|' ? beats.push([]) : beats[beats.length - 1].push(a);
@@ -155,7 +162,8 @@ const Court = (() => {
       });
       let t0 = 0;
       outBeats.forEach(b => { b.t0 = t0; t0 += b.dur + 0.3; });
-      return { text, beats: outBeats, start, dur: Math.max(0, t0 - 0.3), end: { pos: { ...pos }, balls: { ...balls } } };
+      ends.push({ pos: { ...pos }, balls: { ...balls } });
+      return { text, beats: outBeats, start, dur: Math.max(0, t0 - 0.3), end: ends[i] };
     });
     return { dg, full, k: full ? 1.3 : 1, ids, steps, notes: dg.n || [], zones: dg.z || [], rings: dg.c || [] };
   }

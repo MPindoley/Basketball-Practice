@@ -7,6 +7,7 @@
 //          Ids: digits/letters = offense, x… = defense, c… = coach, k… = cone, h… = chair, b… = loose ball.
 //          Trailing lowercase letters are hidden in the label, so 2a and 2b both read "2".
 //   s:     steps: [caption, actions]. Actions in a step run together; '|' starts the next beat.
+//          [caption, actions, n] starts from where step n ended (1 = the first step): use it to show a second option.
 //          ['c', id, ...spots] cut      ['d', id, ...spots] dribble   ['s', id, spot] screen
 //          ['m', id, ...spots] rotate   ['L', id, ...spots] drive + layup
 //          ['p', from, to] pass   ['sh', id] shot   ['r', id] rebound   ['g', id] new ball
