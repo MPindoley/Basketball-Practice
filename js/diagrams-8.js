@@ -507,12 +507,14 @@ Object.assign(DIAGRAMS, {
         [['s', '2', [-19.5, 8]], ['s', '1', [-10, 24], [-16, 10.5]], ['c', '3', [17, 18]], '|',
           ['c', '4', [-23, 8], [-21, 13], [-15.5, 15], [-8, 11], [-1, 8], [9, 4], 'rc'], '|',
           ['c', '2', [-19.5, 13], [-16, 19], [-11, 25]], '|', ['c', '1', [-18, 16]]]],
-      // No pass here: the ball stays on 5 so the next step can show him going right instead.
-      ['Finish left: 5 dribbles at 2 for the handoff. 2 brush cuts off him to the rim. 1 lifts behind 2 and 5 hands it to 1.',
-        [['d', '5', [1, 23], [-5.5, 24.5]], '|', ['c', '2', [-7, 21.5], [-3.5, 17], [-5, 9], [-9, 5]], '|', ['c', '1', [-14, 23], [-9.5, 27]]]],
-      ['Or finish right: 3 sets the hammer screen for 4, who curls. 5 dribbles right and hands off to 3, then rolls to the basket.',
-        [['s', '3', [19.5, 9]], '|', ['c', '4', [23, 8], [20.5, 13.5], [14, 13], [7.5, 8]], ['d', '5', [5.5, 24.5]], '|',
-          ['c', '3', [20, 15], [16, 22], [10, 26]], ['p', '5', '3'], '|', ['c', '5', [3, 17], [-1, 10]]]],
+      ['Finish left: 5 dribbles at 2 for the handoff. 2 brush cuts off him to the rim. 1 lifts behind 2 and takes the handoff, and 5 rolls to the basket.',
+        [['d', '5', [1, 23], [-5.5, 24.5]], '|', ['c', '2', [-7, 21.5], [-3.5, 17], [-5, 9], [-9, 5]], '|', ['c', '1', [-14, 23], [-9.5, 27]], ['p', '5', '1'], '|', ['c', '5', [-2, 17], [1.5, 10]]]],
+      // The first beat puts everyone back in the pinch-post picture, so the other finish starts from the same spots.
+      ['Or, from the same picture, finish right: 3 sets the hammer screen for 4, who curls. 5 dribbles right, hands off to 3, and rolls to the basket.',
+        [['m', '5', [6.5, 18.5]], ['m', '2', [-11, 25]], ['m', '1', [-18, 16]], ['p', '1', '5'], '|',
+          ['s', '3', [19.5, 9]], '|', ['c', '4', [23, 8], [20.5, 13.5], [14, 13], [7.5, 8]], ['d', '5', [9, 23.5]], '|',
+          ['c', '3', [20, 15], [18, 21], [13.5, 25.5]], ['p', '5', '3'], '|', ['c', '5', [5, 17], [0, 10]]]],
+      ['That is the foundation. From here it is all reads: 5 rolls when the defense gives it, 4 can pop for a three, 2 can screen for a cutter. Take what they give.', []],
     ],
   },
 });
