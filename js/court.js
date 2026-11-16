@@ -289,8 +289,10 @@ const Court = (() => {
       if (c[2] && !opts.mini) s += `<text class="note" x="${p[0]}" y="${p[1] + c[1] + 1.8}">${c[2]}</text>`;
     }
     if (!opts.mini) for (const n of model.notes) { const p = pt(n[1]); s += `<text class="note" x="${p[0]}" y="${p[1]}">${n[0]}</text>`; }
-    s += `</g><g class="arrows">${model.steps.length ? arrows(model, 0) : ''}</g><g class="players">`;
-    const st = model.steps[0] ? model.steps[0].start : { pos: {}, balls: {} };
+    // opts.still = a step number: draw that step frozen at its start (for print), balls included
+    const si = opts.still || 0, fr = opts.still != null && model.steps[si] ? frame(model, si, 0) : null;
+    s += `</g><g class="arrows">${model.steps.length ? arrows(model, si) : ''}</g><g class="players">`;
+    const st = model.steps[si] ? model.steps[si].start : { pos: {}, balls: {} };
     for (const id of model.ids) {
       const p = st.pos[id] || pt(model.dg.p[id] || model.dg.p[id + '*']);
       s += `<g class="pl k-${kind(id)}" data-id="${id}" transform="translate(${f(p[0])} ${f(p[1])})"><g transform="scale(${model.k})">${marker(id)}</g></g>`;
@@ -298,7 +300,8 @@ const Court = (() => {
     s += '</g><g class="balls">';
     const allBalls = new Set();
     model.steps.forEach(st2 => { Object.keys(st2.start.balls).forEach(b => allBalls.add(b)); Object.keys(st2.end.balls).forEach(b => allBalls.add(b)); });
-    for (const b of allBalls) s += `<g class="ball" data-b="${b}"><circle r=".72"/><path d="M-.72 0H.72M0-.72C.35-.3.35.3 0 .72"/></g>`;
+    const ballAt = b => !fr ? '' : fr.ballPos[b] ? ` transform="translate(${f(fr.ballPos[b][0])} ${f(fr.ballPos[b][1])}) scale(${f(model.k)})"` : ' style="display:none"';
+    for (const b of allBalls) s += `<g class="ball" data-b="${b}"${ballAt(b)}><circle r=".72"/><path d="M-.72 0H.72M0-.72C.35-.3.35.3 0 .72"/></g>`;
     return s + '</g></svg>';
   }
 
@@ -386,10 +389,16 @@ const Court = (() => {
     try { return svg(build(dg), { mini: true, uid: ++uid }); } catch (e) { return ''; }
   }
 
+  // One frozen picture per step, for the printed play sheet.
+  function stills(dg) {
+    const model = build(dg);
+    return model.steps.map((_, i) => svg(model, { uid: ++uid, still: i }));
+  }
+
   function blank(full) {
     return `<svg xmlns="${NS}" viewBox="-27.5 -4.5 55 ${(full ? 94 : 47) + 9}" class="wb"><g class="court">${courtLines(full)}</g></svg>`;
   }
 
-  return { build, frame, mount, thumb, blank, pt, SPOTS };
+  return { build, frame, mount, thumb, stills, blank, pt, SPOTS };
 })();
 if (typeof module !== 'undefined') module.exports = Court;
