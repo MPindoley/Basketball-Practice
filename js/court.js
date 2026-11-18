@@ -403,10 +403,32 @@ const Court = (() => {
     return model.steps.map((_, i) => svg(model, { uid: ++uid, still: i }));
   }
 
+  // A finger-drawn path, cleaned up: keep only the few points that carry its shape (Ramer-Douglas-Peucker);
+  // build() runs a spline through them, so the line comes out smooth. null = too short to be a move.
+  function simplify(pts, H) {
+    let len = 0;
+    for (let i = 1; i < pts.length; i++) len += dist(pts[i - 1], pts[i]);
+    if (len < 1.5) return null;
+    const rdp = (a, eps) => {
+      if (a.length < 3) return a.slice();
+      const p = a[0], q = a[a.length - 1], L = dist(p, q);
+      let k = 0, dm = -1;
+      for (let i = 1; i < a.length - 1; i++) {
+        const d = L < 1e-6 ? dist(p, a[i]) : Math.abs((q[0] - p[0]) * (p[1] - a[i][1]) - (p[0] - a[i][0]) * (q[1] - p[1])) / L;
+        if (d > dm) { dm = d; k = i; }
+      }
+      return dm > eps ? rdp(a.slice(0, k + 1), eps).slice(0, -1).concat(rdp(a.slice(k), eps)) : [p, q];
+    };
+    let eps = 0.8, out = rdp(pts, eps);
+    while (out.length > 6) out = rdp(pts, eps *= 1.5);
+    const r = v => Math.round(v * 10) / 10;
+    return out.map(([x, y]) => [r(Math.max(-25, Math.min(25, x))), r(Math.max(-3, Math.min(H + 3, y)))]);
+  }
+
   function blank(full) {
     return `<svg xmlns="${NS}" viewBox="-27.5 -4.5 55 ${(full ? 94 : 47) + 9}" class="wb"><g class="court">${courtLines(full)}</g></svg>`;
   }
 
-  return { build, frame, mount, thumb, stills, blank, pt, SPOTS };
+  return { build, frame, mount, thumb, stills, simplify, blank, pt, SPOTS };
 })();
 if (typeof module !== 'undefined') module.exports = Court;

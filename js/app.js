@@ -46,8 +46,14 @@
   const LEVELS = ['Foundation', 'Intermediate', 'Advanced'];
   const levelBars = l => `<span class="level l${LEVELS.indexOf(l) + 1}" title="${esc(l)}"><i></i><i></i><i></i></span>`;
   const own = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
-  const drill = id => (own(BY_ID, id) && BY_ID[id]) || (own(state.custom, id) && state.custom[id]) || null;
-  const allDrills = () => DATA.drills.concat(Object.values(state.custom));
+  // state.edits[id] holds only the fields the coach changed on a built-in item, so the originals keep updating underneath
+  const withEdits = d => own(state.edits, d.id) ? { ...d, ...state.edits[d.id], edited: true } : d;
+  const drill = id => (own(BY_ID, id) && withEdits(BY_ID[id])) || (own(state.custom, id) && state.custom[id]) || null;
+  const allDrills = () => DATA.drills.map(withEdits).concat(Object.values(state.custom));
+  // the diagram to show: the coach's own (his play, or his edit of ours), else the built-in one
+  const diagOf = id => { const d = drill(id); return (d && d.dg) || DIAGRAMS[id] || null; };
+  const PHOTO = /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/; // photos this app made (see addPhoto); nothing else gets shown
+  const photoOk = ph => !!(ph && PHOTO.test(ph.img));
   const BOOK = new Set((DATA.groups.find(g => g.id === 'plays') || { cats: [] }).cats); // playbook categories
   // the Lake program (js/program.js): the "Runs at" ladder is a different idea from drill difficulty, so it never says "level"
   const P = DATA.program, LADDER = P.LADDER, VALUES = P.VALUES, keyOf = P.keyOf;
@@ -57,7 +63,7 @@
   const isConf = it => !!(it.confirm || (it.play && (BY_ID[it.play] || {}).confirm));
   const thumbs = new Map();
   const thumb = id => {
-    if (!thumbs.has(id)) thumbs.set(id, DIAGRAMS[id] ? Court.thumb({ ...DIAGRAMS[id], id }) : Court.blank(false));
+    if (!thumbs.has(id)) { const dg = diagOf(id); thumbs.set(id, dg ? Court.thumb({ ...dg, id }) : Court.blank(false)); }
     return thumbs.get(id);
   };
 
@@ -79,7 +85,7 @@
   // ---------- state ----------
   const KEY = 'practicebook.v1', RKEY = 'practicebook.run', SKEY = 'practicebook.synced';
   const read = k => { try { return JSON.parse(localStorage.getItem(k)); } catch (e) { return null; } };
-  const write = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* private mode: keep going in memory */ } };
+  const write = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; /* private mode or full: keep going in memory */ } };
 
   function planFrom(tpl, start) {
     const p = { id: uid(), name: 'New Practice', date: today(), start: start || '15:30', focus: '', message: '', items: [] };
@@ -95,7 +101,7 @@
     return p;
   }
   // program settings: our team, "We run this" overrides, Our 5, cleared "Staff to confirm" tags
-  const fresh = () => ({ team: '8', runs: {}, our5: [], confirmed: {}, sheet: { title: '', ids: [] } }); // sheet: the plays picked for the printed play sheet
+  const fresh = () => ({ team: '8', runs: {}, our5: [], confirmed: {}, sheet: { title: '', ids: [] }, edits: {} }); // sheet: the plays picked for the printed play sheet
   function seed() {
     const p = planFrom('plan1');
     return { v: 1, updated: 0, plans: { [p.id]: p }, current: p.id, custom: {}, notes: {}, installed: {}, sketch: { full: false, h: [], f: [] }, ...fresh() };
@@ -107,13 +113,13 @@
   const ours = it => it.mine ? state.runs[it.id] !== false : DATA.runsHere(it, state.team, state.runs);
   function save(rerender = true) {
     state.updated = Date.now();
-    write(KEY, state);
+    if (!write(KEY, state)) toast('This device is out of room, so that is not saved here. Delete a photo or an old play.');
     sync.push();
     if (rerender) render();
   }
 
   // ---------- sync through the artifact's per-person store (claude.ai); local-only elsewhere ----------
-  const merge = (to, from) => ['plans', 'custom', 'notes', 'installed', 'runs', 'confirmed'].forEach(k => {
+  const merge = (to, from) => ['plans', 'custom', 'notes', 'installed', 'runs', 'confirmed', 'edits'].forEach(k => {
     to[k] = to[k] || {};
     for (const id in from[k] || {}) if (!(id in to[k])) to[k][id] = from[k][id];
   });
@@ -311,7 +317,7 @@
     return `<div class="item${d.cat === 'BR' ? ' water' : ''}" style="${gc(d.cat)}"><div class="time num">${clock(start)}</div>
       <button class="body" data-act="open" data-id="${esc(d.id)}"><span class="nm">${esc(d.name)}</span>
       <span class="meta"><span class="cat-code">${esc(d.cat)}</span><span class="tag">${esc(DATA.cats[d.cat] || '')}</span>${d.college ? `<span class="college">${I.star}${esc(d.college.split(' (')[0])}</span>` : ''}</span></button>
-      <button class="ithumb" data-act="open" data-id="${esc(d.id)}" tabindex="-1" aria-hidden="true">${d.sketch ? sketchStatic(d.sketch, true) : thumb(d.id)}</button>${side}${tools}</div>`;
+      <button class="ithumb" data-act="open" data-id="${esc(d.id)}" tabindex="-1" aria-hidden="true">${d.sketch && !d.dg ? sketchStatic(d.sketch, true) : thumb(d.id)}</button>${side}${tools}</div>`;
   }
 
   function planText(p) {
@@ -369,7 +375,7 @@
   const isProg = d => !!(d.from || d.candidate);
   function drillCard(d, picking, opts = {}) {
     return `<div class="drill-card${opts.dim ? ' dim' : ''}" style="${gc(d.cat)}">
-      <button class="thumb" data-act="open" data-id="${esc(d.id)}" aria-label="Open ${esc(d.name)}">${d.sketch ? sketchStatic(d.sketch, true) : thumb(d.id)}</button>
+      <button class="thumb" data-act="open" data-id="${esc(d.id)}" aria-label="Open ${esc(d.name)}">${d.sketch && !d.dg ? sketchStatic(d.sketch, true) : thumb(d.id)}</button>
       <button class="info" data-act="open" data-id="${esc(d.id)}">
         <b>${esc(d.name)}</b>
         <span class="row" style="gap:8px"><span class="cat-code">${esc(d.id)}</span>${levelBars(d.level)}<span class="tag num">${d.min} min</span>${inPlan(d.id) && !picking ? '<span class="tag" style="color:var(--accent)">In plan</span>' : ''}</span>
@@ -440,7 +446,8 @@
     const turnedOff = all.filter(d => !d.candidate && d.from && rank(d.from) <= team && !ours(d));
     return `<div class="section-head" style="margin-top:0"><h2>Playbook</h2><button class="chip on" data-act="goteam" aria-label="Our team: ${esc(P.LEVEL_NAMES[state.team])}. Change it in the Program tab">Our team: ${esc(P.LEVEL_NAMES[state.team])}</button></div>
       <p class="muted" style="margin:0">Tap one to see it run, or + to add it to <b>${esc(cur().name)}</b>.</p>
-      <button class="btn" style="margin-top:12px" data-act="playsheet">${I.list}Play sheet for players${sheetIds().length ? ` · ${sheetIds().length} picked` : ''}</button>
+      <div class="row" style="gap:8px;margin-top:12px;flex-wrap:wrap"><button class="btn" data-act="newplay">${I.edit}Draw your own play</button>
+        <button class="btn" data-act="playsheet">${I.list}Play sheet for players${sheetIds().length ? ` · ${sheetIds().length} picked` : ''}</button></div>
       <div class="section-head pkg-head"><h2>Our Package</h2><span class="muted num">${pkg.length} plays &amp; defenses</span></div>
       ${P.TYPES.map(t => grp(P.typeLabels[t], off.filter(d => d.type === t), 'PL')).join('')}
       ${grp('More plays', off.filter(d => !P.TYPES.includes(d.type)), 'PL')}
@@ -494,10 +501,12 @@
     const plays = bookAll().filter(d => onSheet(d.id));
     return `<header class="ps-head"><h1>${esc(sheetTitle())}</h1><p>Lake Flyers · ${esc(teamName(state.team))} · Numbers are offense, X is defense. Each picture is one step: players are where the step starts, arrows show where they go.</p>${LEGEND}</header>
       ${plays.map(d => {
-        const dg = DIAGRAMS[d.id], pics = dg ? Court.stills({ ...dg, id: d.id }) : d.sketch ? [sketchStatic(d.sketch)] : [];
+        const dg = diagOf(d.id);
+        const pics = dg ? Court.stills({ ...dg, id: d.id }) : d.sketch ? [sketchStatic(d.sketch)] : photoOk(d.photo) ? [`<img src="${d.photo.img}" alt="">`] : [];
+        const caps = dg ? dg.s.map(s => s[0]) : [];
         return `<section class="ps-play"><div class="ps-top"><h2>${esc(d.name)}</h2><span>${esc([DATA.cats[d.cat] && d.cat !== 'PL' ? DATA.cats[d.cat] : '', typeName(d)].filter(Boolean).join(' · '))}</span>
           <p><b>Start:</b> ${esc(d.setup || '')}</p></div>
-          <div class="ps-steps${dg && dg.court === 'f' ? ' full' : ''}">${pics.map((svg, i) => `<figure>${svg}<figcaption>${dg ? `<b>${i + 1}</b> ${esc(dg.s[i][0])}` : ''}</figcaption></figure>`).join('')}</div>
+          <div class="ps-steps${dg && dg.court === 'f' ? ' full' : ''}">${pics.map((svg, i) => `<figure>${svg}<figcaption>${caps[i] || pics.length > 1 ? `<b>${i + 1}</b> ${esc(caps[i])}` : ''}</figcaption></figure>`).join('')}</div>
           ${d.points && d.points.length ? `<ul class="ps-points">${d.points.map(p => `<li>${esc(p)}</li>`).join('')}</ul>` : ''}</section>`;
       }).join('')}`;
   }
@@ -579,8 +588,8 @@
     </div>`;
   })();
   function boardBlock(id) {
-    const d = drill(id), dg = DIAGRAMS[id];
-    if (d.sketch) return `<div class="board-frame">${sketchStatic(d.sketch)}</div>`;
+    const d = drill(id), dg = diagOf(id);
+    if (!dg && d.sketch) return `<div class="board-frame">${sketchStatic(d.sketch)}</div>`;
     if (!dg) return `<div class="board-frame">${Court.blank(false)}</div>`;
     return `<div class="board-scope" data-id="${esc(id)}">
       <div class="board-frame"><div class="board-mount"></div></div>
@@ -594,7 +603,7 @@
     </div>`;
   }
   function mountBoard(scope, opts = {}) {
-    const id = scope.dataset.id, dg = DIAGRAMS[id], seen = new Set();
+    const id = scope.dataset.id, dg = diagOf(id), seen = new Set();
     const ctl = Court.mount($('.board-mount', scope), { ...dg, id }, {
       loop: opts.loop, speed: () => speed, label: (drill(id) || {}).name + ' diagram',
       onStep(i, playing) {
@@ -645,10 +654,11 @@
             <h1>${esc(d.name)}</h1>
             <div class="meta">${levelBars(d.level)}<span class="tag">${esc(d.level)}</span><span class="tag num">${d.min} min</span>
               ${d.num ? `<span class="numtag">${esc(d.num)}</span>` : ''}${d.type ? `<span class="tag type">${esc(typeName(d))}</span>` : ''}
-              ${d.college ? `<span class="college">${I.star}${esc(d.college)}</span>` : ''}${d.mine ? '<span class="college" style="background:var(--accent-soft);color:var(--accent)">Your drill</span>' : ''}</div>
+              ${d.college ? `<span class="college">${I.star}${esc(d.college)}</span>` : ''}${d.mine || d.edited ? `<span class="college" style="background:var(--accent-soft);color:var(--accent)">${d.mine ? 'Yours' : 'Edited by you'}</span>` : ''}</div>
             ${isProg(d) ? progRow(d) : ''}
           </div>
           ${boardBlock(id)}
+          ${photoOk(d.photo) ? `<section class="block"><h3>Your sheet</h3><img class="sheet-photo" src="${d.photo.img}" alt="Photo of the play sheet for ${esc(d.name)}"></section>` : ''}
         </div>
         <div class="right stack">
           ${d.candidate ? block('Offense option', `<p><b>Why it fits Lake:</b> ${esc(d.why || '')}</p><p><b>Best for:</b> ${esc(d.best || '')}</p>`, 'option') : ''}
@@ -662,7 +672,8 @@
           ${block('MS adaptation · progression', d.ms ? `<p>${esc(d.ms)}</p>` : '', 'adapt')}
           <section class="block"><h3>My notes</h3><textarea class="field" id="note-${esc(id)}" data-note="${esc(id)}" placeholder="What worked, who needs reps, how you changed it…">${esc(state.notes[id] || '')}</textarea></section>
           ${d.source || d.url ? `<p class="muted" style="font-size:14px;margin:0">Source: ${esc(d.source || '')}${d.url ? ` · <a href="${esc(d.url)}" target="_blank" rel="noopener">Original drill</a>` : ''}</p>` : ''}
-          ${d.mine ? `<div class="row"><button class="btn" data-act="editdrill" data-id="${esc(id)}">${I.edit}Edit drill</button><button class="btn" data-act="deldrill" data-id="${esc(id)}">${I.trash}Delete</button></div>` : ''}
+          <div class="row"><button class="btn" data-act="editdrill" data-id="${esc(id)}">${I.edit}Edit</button>${d.mine ? `<button class="btn" data-act="deldrill" data-id="${esc(id)}">${I.trash}Delete</button>`
+            : d.edited ? `<button class="btn" data-act="resetdrill" data-id="${esc(id)}">${I.undo}<span>Undo my edits</span></button>` : ''}</div>
         </div>
       </div></div>`;
     document.body.appendChild(ov);
@@ -854,52 +865,190 @@
       <p class="muted" style="font-size:14px">Draw up a set during a timeout, a fix in the middle of a drill, or next week's idea. It saves as you draw.</p>`;
   }
 
-  // ---------- custom drills ----------
-  let draft = null;
-  function openDrillForm(id) {
-    const d = id ? state.custom[id] : null;
-    draft = { sketch: d && d.sketch ? JSON.parse(JSON.stringify(d.sketch)) : { full: false, strokes: [] } };
+  // ---------- your own drills and plays, and edits to ours ----------
+  // The play editor writes the same diagram format as the built-in plays (see js/diagrams-1.js), so they animate the same way.
+  let draft = null, tool = 'c';
+  const TOOLS = [['c', 'Cut'], ['d', 'Dribble'], ['p', 'Pass'], ['s', 'Screen'], ['sh', 'Shot']];
+  const startDg = () => ({ p: { '1*': [0, 28], 2: [17, 18], 3: [-17, 18], 4: [-7.5, 8], 5: [7.5, 8] }, s: [['', []]] });
+  const pkey = (p, id) => Object.keys(p).find(k => k.replace(/\*/g, '') === id);
+  const tryBuild = dg => { try { Court.build({ ...dg, id: 'edit' }); return null; } catch (e) { return e; } };
+  function openDrillForm(id, opts = {}) {
+    const d = id ? drill(id) : null, base = d && !d.mine ? BY_ID[id] : null; // base: a built-in item, edited on top
+    const play = d ? BOOK.has(d.cat) : !!opts.play, noun = play ? 'play' : 'drill';
+    const dg0 = id ? diagOf(id) : null;
+    draft = { i: dg0 ? 1 : 0, dirty: false, touched: false, dg: JSON.parse(JSON.stringify(dg0 || startDg())), photo: d && photoOk(d.photo) ? d.photo : null, ctl: null };
+    if (!draft.dg.s.length) draft.dg.s.push(['', []]);
+    const cats = Object.entries(DATA.cats).filter(([c]) => !play || BOOK.has(c));
     const ov = document.createElement('div');
     ov.className = 'overlay'; ov.id = 'drillform';
     ov.innerHTML = `<div class="overlay-bar"><button class="icon-btn ghost" data-act="closeform" aria-label="Close">${I.back}</button>
-      <div class="ttl">${d ? 'Edit drill' : 'Add your own drill'}</div><button class="btn primary" form="dform" type="submit">${I.check}Save</button></div>
+      <div class="ttl">${base ? `Edit ${noun}` : d ? `Edit your ${noun}` : play ? 'Draw your own play' : 'Add your own drill'}</div><button class="btn primary" form="dform" type="submit">${I.check}Save</button></div>
       <div class="overlay-body"><form id="dform" class="detail" data-id="${esc(id || '')}">
         <div class="stack">
-          <label class="lbl">Drill name<input class="field" name="name" id="f-name" required value="${esc(d ? d.name : '')}" placeholder="e.g. Shell Drill with Skip"></label>
-          <div class="plan-meta" style="grid-template-columns:repeat(3,minmax(0,1fr))">
-            <label class="lbl">Category<select class="field" name="cat" id="f-cat">${Object.entries(DATA.cats).map(([c, n]) => `<option value="${c}" ${d && d.cat === c ? 'selected' : ''}>${c} · ${esc(n)}</option>`).join('')}</select></label>
-            <label class="lbl">Minutes<input class="field" name="min" id="f-min" type="number" min="1" max="60" value="${d ? d.min : 6}"></label>
+          <label class="lbl">Name<input class="field" name="name" id="f-name" required maxlength="80" value="${esc(d ? d.name : '')}" placeholder="${play ? 'e.g. Bulldog' : 'e.g. Shell Drill with Skip'}"></label>
+          <div class="plan-meta" style="grid-template-columns:repeat(${base ? 2 : 3},minmax(0,1fr))">
+            ${base ? '' : `<label class="lbl">Category<select class="field" name="cat" id="f-cat">${cats.map(([c, n]) => `<option value="${c}" ${(d ? d.cat === c : play && c === 'PL') ? 'selected' : ''}>${c} · ${esc(n)}</option>`).join('')}</select></label>`}
+            <label class="lbl">Minutes<input class="field" name="min" id="f-min" type="number" min="1" max="60" value="${d ? d.min : play ? 8 : 6}"></label>
             <label class="lbl">Level<select class="field" name="level" id="f-level">${LEVELS.map(l => `<option ${d && d.level === l ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
           </div>
-          <label class="lbl">Players &amp; equipment<input class="field" name="players" id="f-players" value="${esc(d ? d.players : '')}" placeholder="Groups of 3, 1 ball"></label>
-          <label class="lbl">Setup<textarea class="field" name="setup" id="f-setup">${esc(d ? d.setup : '')}</textarea></label>
-          <label class="lbl">How it runs<textarea class="field" name="runs" id="f-runs">${esc(d ? d.runs : '')}</textarea></label>
+          ${play && !base ? `<label class="lbl">Kind of play (offense only)<select class="field" name="type"><option value="">Other</option>${P.TYPES.map(t => `<option value="${esc(t)}" ${d && d.type === t ? 'selected' : ''}>${esc(P.typeLabels[t])}</option>`).join('')}</select></label>` : ''}
+          <label class="lbl">Players${play ? '' : ' &amp; equipment'}<input class="field" name="players" id="f-players" value="${esc(d ? d.players : play ? '5 players, half court' : '')}" placeholder="Groups of 3, 1 ball"></label>
+          <label class="lbl">Setup${play ? ' · starting spots' : ''}<textarea class="field" name="setup" id="f-setup">${esc(d ? d.setup : '')}</textarea></label>
+          <label class="lbl">How it runs · notes<textarea class="field" name="runs" id="f-runs">${esc(d ? d.runs : '')}</textarea></label>
           <label class="lbl">Coaching points (one per line)<textarea class="field" name="points" id="f-points">${esc(d && d.points ? d.points.join('\n') : '')}</textarea></label>
-          <label class="lbl">Make it harder / easier<textarea class="field" name="ms" id="f-ms">${esc(d ? d.ms : '')}</textarea></label>
+          <label class="lbl">${play ? 'Teaching it' : 'Make it harder / easier'}<textarea class="field" name="ms" id="f-ms">${esc(d ? d.ms : '')}</textarea></label>
         </div>
-        <div class="stack">
-          <div class="row" style="justify-content:space-between"><span class="eyebrow">Draw it up</span>
-            <div class="chips"><button type="button" class="chip ${!draft.sketch.full ? 'on' : ''}" data-act="fcourt" data-v="0">Half</button><button type="button" class="chip ${draft.sketch.full ? 'on' : ''}" data-act="fcourt" data-v="1">Full</button></div></div>
-          <div class="sketch-tools">${penTools('f')}</div>
-          <div class="board-frame sketch-wrap" id="fsketch"></div>
-        </div>
+        <div class="stack"><div id="fdiag"></div>
+          ${d && d.sketch && !d.dg ? '<p class="muted" style="margin:0">Your old sketch stays until you build a diagram here.</p>' : ''}
+          ${base ? '' : '<div class="stack" id="fphotobox" style="gap:8px"></div><input type="file" id="fphotoin" accept="image/*" hidden data-upload>'}</div>
       </form></div>`;
     document.body.appendChild(ov);
-    mountSketch($('#fsketch'), draft.sketch, () => {});
+    paintDiag(); paintPhoto();
     $('#dform').addEventListener('submit', e => {
       e.preventDefault();
-      const f = new FormData(e.target), oldId = e.target.dataset.id;
-      const nid = oldId || 'MY-' + pad(Object.keys(state.custom).length + 1) + uid().slice(0, 2).toUpperCase();
-      state.custom[nid] = {
-        id: nid, mine: true, name: f.get('name').trim(), cat: f.get('cat'), min: Math.max(1, +f.get('min') || 5), level: f.get('level'),
-        players: f.get('players').trim(), setup: f.get('setup').trim(), runs: f.get('runs').trim(), ms: f.get('ms').trim(),
-        points: f.get('points').split('\n').map(s => s.trim()).filter(Boolean),
-        sketch: draft.sketch.strokes.length ? draft.sketch : null, source: 'Your drill',
-      };
-      thumbs.delete(nid);
+      const f = new FormData(e.target), oldId = e.target.dataset.id, t = k => String(f.get(k) || '').trim();
+      const fields = { name: t('name'), min: Math.max(1, Math.min(60, +f.get('min') || 5)), level: f.get('level'), players: t('players'), setup: t('setup'),
+        runs: t('runs'), ms: t('ms'), points: String(f.get('points') || '').split('\n').map(x => x.trim()).filter(Boolean) };
+      let key = id;
+      if (base) { // keep only what differs from the original
+        const ch = {};
+        for (const [k, v] of Object.entries(fields)) if (JSON.stringify(v) !== JSON.stringify(base[k] ?? (k === 'points' ? [] : ''))) ch[k] = v;
+        if (JSON.stringify(draft.dg) !== JSON.stringify(DIAGRAMS[id])) ch.dg = draft.dg;
+        if (Object.keys(ch).length) state.edits[id] = ch; else delete state.edits[id];
+      } else {
+        key = oldId || 'MY-' + pad(Object.keys(state.custom).length + 1) + uid().slice(0, 2).toUpperCase();
+        const cat = f.get('cat'), dg = draft.dg;
+        dg.s = dg.s.filter(([c, acts]) => c.trim() || acts.some(a => a !== '|'));
+        if (!dg.s.length) dg.s.push(['', []]);
+        const keepDg = draft.touched || (d && d.dg);
+        state.custom[key] = { id: key, mine: true, cat, ...fields, type: (cat === 'PL' && f.get('type')) || undefined, dg: keepDg ? dg : undefined,
+          sketch: !keepDg && d && d.sketch ? d.sketch : undefined, photo: draft.photo || undefined, source: BOOK.has(cat) ? 'Your play' : 'Your drill' };
+      }
+      thumbs.delete(key);
+      if (draft.ctl) draft.ctl.destroy();
       ov.remove(); save(); refreshDetail();
-      toast(oldId ? 'Drill updated' : 'Drill added to the library');
+      toast(base ? (state.edits[id] ? 'Saved your changes' : 'No changes from the original') : oldId ? 'Saved' : BOOK.has(f.get('cat')) ? 'Play added to the Playbook' : 'Drill added to the library');
     });
+  }
+  // Start: drag players to their spots, tap one to give him the ball. Steps: pick a move and drag from a player.
+  function paintDiag() {
+    const box = $('#fdiag');
+    if (!box) return;
+    const dg = draft.dg, n = dg.s.length, i = draft.i, hasX = Object.keys(dg.p).some(k => /^x/.test(k));
+    box.innerHTML = `<div class="row" style="justify-content:space-between"><span class="eyebrow">Diagram</span>
+        <div class="chips"><button type="button" class="chip ${dg.court !== 'f' ? 'on' : ''}" data-act="fcourt" data-v="0">Half</button><button type="button" class="chip ${dg.court === 'f' ? 'on' : ''}" data-act="fcourt" data-v="1">Full</button></div></div>
+      <div class="steps-dots" style="flex:none;margin:8px 0 10px"><button type="button" class="wide ${i ? '' : 'on'}" data-act="fstep" data-i="0" aria-pressed="${!i}">Start</button>
+        ${dg.s.map((_, k) => `<button type="button" class="${k + 1 === i ? 'on' : ''}" data-act="fstep" data-i="${k + 1}" aria-label="Step ${k + 1}" aria-pressed="${k + 1 === i}">${k + 1}</button>`).join('')}
+        <button type="button" data-act="faddstep" aria-label="Add a step">+</button></div>
+      ${!i ? `<p class="muted ed-help">Drag the players to where they start. Tap a player to give him the ball.</p>
+        <div class="row ed-tools"><button type="button" class="btn small" data-act="fdef">${hasX ? 'Take off the defense' : 'Add defense'}</button></div>`
+      : `<p class="muted ed-help">Pick a move, then drag from a player to where he goes. Pass: drag from the ball to a teammate. Different players move together; <b>Then</b> makes the next move wait.</p>
+        <div class="row ed-tools">${TOOLS.map(([t, l]) => `<button type="button" class="chip ${tool === t ? 'on' : ''}" data-act="ftool" data-v="${t}" aria-pressed="${tool === t}">${l}</button>`).join('')}</div>
+        <div class="row ed-tools"><button type="button" class="btn small" data-act="fthen">Then</button><button type="button" class="btn small" data-act="fundo">${I.undo}Undo</button>
+          <button type="button" class="btn small" data-act="fplay">${I.play}Play it</button>
+          ${n > 1 ? `<button type="button" class="btn small" data-act="fdelstep">${I.trash}<span>Delete step ${i}</span></button>` : ''}</div>`}
+      <div class="board-frame sketch-wrap" id="fboard"></div>
+      ${i ? `<label class="lbl" style="margin-top:12px">Step ${i}: what happens<textarea class="field" data-capt placeholder="1 passes to 2 and cuts to the rim…">${esc(dg.s[i - 1][0])}</textarea></label>` : ''}
+      ${LEGEND}`;
+    drawBoard();
+  }
+  function drawBoard() {
+    const el = $('#fboard');
+    if (!el) return;
+    if (draft.ctl) { draft.ctl.destroy(); draft.ctl = null; }
+    const i = draft.i, dg = { ...draft.dg, id: 'edit', s: i ? draft.dg.s : [['', []]] }, si = i ? i - 1 : 0;
+    const model = Court.build(dg), st = model.steps[si], H = model.full ? 94 : 47;
+    el.innerHTML = Court.stills(dg)[si];
+    const svg = $('svg', el);
+    // a player can be grabbed where the step drew him or where his last move left him
+    const spots = Object.entries(st.end.pos).concat(Object.entries(st.start.pos));
+    const nearest = (P, not) => {
+      let best = null, bd = 3.4 * model.k;
+      for (const [who, q] of spots) { const dd = Math.hypot(q[0] - P[0], q[1] - P[1]); if (who !== not && dd < bd) { bd = dd; best = who; } }
+      return best;
+    };
+    const at = e => { const q = new DOMPoint(e.clientX, e.clientY).matrixTransform(svg.getScreenCTM().inverse()); return [q.x, q.y]; };
+    let g = null;
+    svg.addEventListener('pointerdown', e => {
+      if (!e.isPrimary) return;
+      const P = at(e), who = nearest(P);
+      if (!who) return;
+      e.preventDefault(); svg.setPointerCapture(e.pointerId);
+      if (i && tool === 'sh') { addAct(['sh', who]); return; }
+      g = { who, pts: [P], moved: false, el: i ? null : svg.querySelector(`.pl[data-id="${who}"]`) };
+      if (i) { g.line = document.createElementNS('http://www.w3.org/2000/svg', 'path'); g.line.setAttribute('class', 'ed-ink' + (tool === 'p' ? ' pass' : '')); svg.appendChild(g.line); }
+    });
+    svg.addEventListener('pointermove', e => {
+      if (!g || !e.isPrimary) return;
+      const P = at(e), L = g.pts[g.pts.length - 1];
+      if (Math.hypot(P[0] - L[0], P[1] - L[1]) < 0.3) return;
+      g.pts.push(P); g.moved = true;
+      if (g.el) g.el.setAttribute('transform', `translate(${P[0]} ${P[1]})`);
+      else g.line.setAttribute('d', 'M' + (tool === 'p' ? [g.pts[0], P] : g.pts).map(p => p.join(' ')).join('L'));
+    });
+    svg.addEventListener('pointerup', e => {
+      if (!g || !e.isPrimary) return;
+      const { who, pts, moved } = g, P = pts[pts.length - 1];
+      g = null;
+      if (!i) { if (moved && Math.hypot(P[0] - pts[0][0], P[1] - pts[0][1]) > 0.5) movePlayer(who, P, H); else giveBall(who); return; }
+      if (tool === 'p') { const to = nearest(P, who); if (to) addAct(['p', who, to]); else drawBoard(); return; }
+      const path = Court.simplify(pts, H);
+      if (path) addAct([tool, who, ...path.slice(1)]); else drawBoard();
+    });
+    svg.addEventListener('pointercancel', () => { g = null; drawBoard(); });
+  }
+  function movePlayer(who, P, H) {
+    const r = v => Math.round(v * 2) / 2;
+    draft.dg.p[pkey(draft.dg.p, who)] = [r(Math.max(-25, Math.min(25, P[0]))), r(Math.max(-3, Math.min(H + 3, P[1])))];
+    draft.dirty = draft.touched = true; drawBoard();
+  }
+  function giveBall(who) {
+    const p = draft.dg.p, holders = Object.keys(p).filter(k => k.includes('*'));
+    if (holders.reduce((n, k) => n + k.split('*').length - 1, 0) > 1) { toast('This one has more than one ball. Move them with passes.'); return; }
+    const wk = pkey(p, who), hk = holders[0];
+    if (wk === hk) return;
+    const before = draft.dg.p;
+    draft.dg.p = Object.fromEntries(Object.entries(p).map(([k, v]) => [k === hk ? k.replace('*', '') : k === wk ? k + '*' : k, v]));
+    if (tryBuild(draft.dg)) { draft.dg.p = before; toast('Your steps pass the ball from where it is now. Undo those moves first.'); return; }
+    draft.dirty = draft.touched = true; drawBoard();
+  }
+  // Same player twice, or a player using a ball he is catching in this beat: that move waits for the beat to finish.
+  function addAct(act) {
+    const step = draft.dg.s[draft.i - 1], acts = step[1], who = act[1];
+    const beat = acts.slice(acts.lastIndexOf('|') + 1);
+    const busy = beat.some(a => a[1] === who || (a[0] === 'p' && a[2] === who && ['p', 'd', 'sh'].includes(act[0])));
+    const withActs = list => ({ ...draft.dg, s: draft.dg.s.map((x, k) => (k === draft.i - 1 ? [x[0], list, ...x.slice(2)] : x)) });
+    let list = beat.length && busy ? [...acts, '|', act] : [...acts, act], err = tryBuild(withActs(list));
+    if (err && beat.length && !busy && !tryBuild(withActs([...acts, '|', act]))) { list = [...acts, '|', act]; err = null; }
+    if (err) { toast(/has no ball/.test(err.message) ? `${who.toUpperCase()} doesn't have the ball there.` : "That move doesn't fit here."); drawBoard(); return; }
+    step[1] = list; draft.dirty = draft.touched = true; drawBoard();
+  }
+  function paintPhoto() {
+    const box = $('#fphotobox');
+    if (!box) return;
+    const ph = draft.photo;
+    box.innerHTML = `<span class="eyebrow" style="margin-top:14px">Photo of your sheet (optional)</span>
+      ${ph ? `<img class="sheet-photo" src="${ph.img}" alt="Your sheet">` : ''}
+      <div class="row" style="gap:8px"><button type="button" class="btn small" data-act="fphoto">${ph ? 'Replace photo' : 'Upload a photo'}</button>${ph ? '<button type="button" class="btn small" data-act="fnophoto">Remove photo</button>' : ''}</div>`;
+  }
+  // A phone photo is several MB; shrink it so it fits in the browser's storage (and the account sync).
+  async function addPhoto(file) {
+    if (file.type && !file.type.startsWith('image/')) { toast('Pick a photo or a picture file.'); return; }
+    const url = URL.createObjectURL(file);
+    try {
+      const im = new Image();
+      im.src = url;
+      await im.decode();
+      const k = Math.min(1, 1000 / Math.max(im.naturalWidth, im.naturalHeight)), c = document.createElement('canvas');
+      c.width = Math.round(im.naturalWidth * k); c.height = Math.round(im.naturalHeight * k);
+      const g = c.getContext('2d');
+      g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); g.drawImage(im, 0, 0, c.width, c.height);
+      if (!draft) return;
+      draft.photo = { img: c.toDataURL('image/jpeg', 0.6), w: c.width, h: c.height };
+      draft.dirty = true; paintPhoto();
+    } catch (err) {
+      toast('Could not read that photo. Try a JPEG or PNG.');
+    } finally { URL.revokeObjectURL(url); }
   }
 
   // ---------- notes ----------
@@ -1120,11 +1269,60 @@
       if (!clearArmed) { clearArmed = true; render(); setTimeout(() => { clearArmed = false; if (view === 'board') render(); }, 3000); return; }
       clearArmed = false; sketchData().strokes.length = 0; save();
     },
-    fcourt: el => { draft.sketch.full = el.dataset.v === '1'; draft.sketch.strokes = []; mountSketch($('#fsketch'), draft.sketch, () => {}); $$('[data-act="fcourt"]').forEach(b => b.classList.toggle('on', b === el)); },
-    fundo: () => { draft.sketch.strokes.pop(); $('#fsketch')._redraw(); },
-    fclear: () => { draft.sketch.strokes.length = 0; $('#fsketch')._redraw(); },
-    closeform: () => $('#drillform').remove(),
+    fcourt: el => { if (el.dataset.v === '1') draft.dg.court = 'f'; else delete draft.dg.court; draft.dirty = draft.touched = true; paintDiag(); },
+    fstep: el => { draft.i = +el.dataset.i; paintDiag(); },
+    faddstep: () => { draft.dg.s.push(['', []]); draft.i = draft.dg.s.length; draft.dirty = true; paintDiag(); },
+    ftool: el => { tool = el.dataset.v; paintDiag(); },
+    fthen: () => {
+      const acts = draft.dg.s[draft.i - 1][1];
+      if (acts.length && acts[acts.length - 1] !== '|') { acts.push('|'); toast('The next move waits for these to finish'); }
+    },
+    fundo: () => {
+      const step = draft.dg.s[draft.i - 1], acts = step[1].slice();
+      while (acts.length && acts[acts.length - 1] === '|') acts.pop();
+      acts.pop();
+      while (acts.length && acts[acts.length - 1] === '|') acts.pop();
+      const was = step[1];
+      step[1] = acts;
+      if (tryBuild(draft.dg)) { step[1] = was; toast('A later step needs that move. Change that step first.'); return; }
+      draft.dirty = draft.touched = true; drawBoard();
+    },
+    fplay: () => { if (draft.ctl) draft.ctl.destroy(); draft.ctl = Court.mount($('#fboard'), { ...draft.dg, id: 'edit' }, { speed: () => speed }); draft.ctl.go(draft.i - 1); draft.ctl.play(true); },
+    fdelstep: el => {
+      if (!el.dataset.armed) { el.dataset.armed = 1; el.lastChild.textContent = 'Tap again to delete'; el.style.color = 'var(--bad)'; return; }
+      const gone = draft.dg.s.splice(draft.i - 1, 1);
+      if (tryBuild(draft.dg)) { draft.dg.s.splice(draft.i - 1, 0, ...gone); toast('Another step starts from this one, so it stays.'); return; }
+      draft.i = Math.min(draft.i, draft.dg.s.length); draft.dirty = draft.touched = true; paintDiag();
+    },
+    fdef: () => {
+      const p = draft.dg.p, xs = Object.keys(p).filter(k => /^x/.test(k));
+      if (xs.length) {
+        const keep = { ...p };
+        xs.forEach(k => delete p[k]);
+        if (tryBuild(draft.dg)) { draft.dg.p = keep; toast('Your steps move the defense. Undo those moves first.'); return; }
+      } else {
+        for (const n of ['1', '2', '3', '4', '5']) { // each defender a step inside his man, toward the rim
+          const k = pkey(p, n);
+          if (!k) continue;
+          const [x, y] = Court.pt(p[k]);
+          p['x' + n] = [Math.round(x * 0.8 * 10) / 10, Math.round((y + (5.25 - y) * 0.2) * 10) / 10];
+        }
+      }
+      draft.dirty = draft.touched = true; paintDiag();
+    },
+    fphoto: () => $('#fphotoin').click(),
+    fnophoto: () => { draft.photo = null; draft.dirty = true; paintPhoto(); },
+    closeform: el => { // one stray tap must not throw away a drawn-up play
+      if (draft && draft.dirty && !el.dataset.armed) { el.dataset.armed = 1; toast('Tap back again to throw away your changes'); return; }
+      if (draft && draft.ctl) draft.ctl.destroy();
+      $('#drillform').remove();
+    },
     newdrill: () => openDrillForm(),
+    newplay: () => openDrillForm(null, { play: true }),
+    resetdrill: el => {
+      if (!el.dataset.armed) { el.dataset.armed = 1; el.lastChild.textContent = 'Tap again: back to the original'; el.style.color = 'var(--bad)'; return; }
+      delete state.edits[el.dataset.id]; thumbs.delete(el.dataset.id); save(); refreshDetail(); toast('Back to the original');
+    },
     editdrill: el => openDrillForm(el.dataset.id),
     deldrill: el => {
       if (!el.dataset.armed) { el.dataset.armed = 1; el.lastChild.textContent = 'Tap again to delete'; el.style.color = 'var(--bad)'; return; }
@@ -1191,9 +1389,12 @@
   let noteTimer = 0;
   document.addEventListener('input', e => {
     const el = e.target;
+    if (draft && el.closest('#drillform')) draft.dirty = true;
     if (el.dataset.field) {
       cur()[el.dataset.field] = el.value;
       if (el.dataset.field === 'name' || el.dataset.field === 'focus' || el.dataset.field === 'message') save(false);
+    } else if ('capt' in el.dataset) {
+      draft.dg.s[draft.i - 1][0] = el.value; draft.touched = true;
     } else if ('sheettitle' in el.dataset) {
       state.sheet.title = el.value;
       clearTimeout(noteTimer); noteTimer = setTimeout(() => save(false), 600);
@@ -1208,6 +1409,7 @@
     }
   });
   document.addEventListener('change', e => {
+    if ('upload' in e.target.dataset) { const file = e.target.files[0]; e.target.value = ''; if (file) addPhoto(file); return; }
     if (e.target.dataset.field === 'date' || e.target.dataset.field === 'start') save();
   });
   document.addEventListener('keydown', e => {

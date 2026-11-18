@@ -47,6 +47,18 @@ for (const [id, dg] of Object.entries(DIAGRAMS)) {
   }
 }
 
+// ---------- the play editor's line clean-up (Court.simplify) ----------
+{
+  const L = Court.simplify([[0, 0], [1, 0.1], [2, -0.1], [3, 0.1], [4, 0], [4.1, 1], [3.9, 2], [4, 3]], 47);
+  if (!L || L.length !== 3) fail(`simplify: a wobbly L-shape should keep 3 points, kept ${L && L.length}`);
+  if (Court.simplify([[0, 0], [0.5, 0.3]], 47) !== null) fail('simplify: a tap is not a move');
+  const wig = Array.from({ length: 300 }, (_, i) => [Math.cos(i / 60) * 15 + Math.sin(i * 7) * 0.4, Math.sin(i / 60) * 15 + 20]);
+  const W = Court.simplify(wig, 47);
+  if (!W || W.length > 6) fail(`simplify: a long wiggly curve should keep at most 6 points, kept ${W && W.length}`);
+  const O = Court.simplify([[0, 30], [40, 60]], 47);
+  if (O[1][0] !== 25 || O[1][1] !== 50) fail('simplify: points stay on the board');
+}
+
 // ---------- the Lake program (js/program.js) ----------
 const P = DATA.program;
 for (const id of P.missing) fail(`program.js patches ${id}, which is not in the library`);
