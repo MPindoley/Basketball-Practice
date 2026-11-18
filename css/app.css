@@ -564,11 +564,13 @@ button.confirm { height: 32px; padding: 0 10px; }
 .flash-ctl { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 
 /* ---------- your own plays, edits ---------- */
-svg.wb.photo { background: #fff; }
-.cap-edit { display: grid; grid-template-columns: minmax(0, 132px) minmax(0, 1fr); gap: 10px; align-items: start; }
-.cap-edit .board-frame { padding: 4px; }
-.cap-edit textarea { min-height: 84px; }
-.my-steps .player-bar { margin-top: 12px; }
+.ed-help { margin: 0 0 8px; font-size: 14px; }
+.ed-tools { gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+.steps-dots button.wide { padding: 0 12px; }
+svg.wb path.ed-ink { fill: none; stroke: var(--off); stroke-width: .5; stroke-linecap: round; stroke-linejoin: round; opacity: .6; }
+svg.wb path.ed-ink.pass { stroke: var(--pass); stroke-dasharray: 1 .75; }
+.sheet-photo { display: block; width: 100%; height: auto; border-radius: 10px; border: 1px solid var(--line); }
+#printsheet .ps-steps img { width: 100%; height: auto; display: block; }
 
 /* ---------- play sheet ---------- */
 .drill-card .add.on { background: #e8f6ed; border-color: #bfe3cb; color: var(--ok); }
