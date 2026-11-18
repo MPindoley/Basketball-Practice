@@ -46,8 +46,12 @@
   const LEVELS = ['Foundation', 'Intermediate', 'Advanced'];
   const levelBars = l => `<span class="level l${LEVELS.indexOf(l) + 1}" title="${esc(l)}"><i></i><i></i><i></i></span>`;
   const own = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
-  const drill = id => (own(BY_ID, id) && BY_ID[id]) || (own(state.custom, id) && state.custom[id]) || null;
-  const allDrills = () => DATA.drills.concat(Object.values(state.custom));
+  // state.edits[id] holds only the fields the coach changed on a built-in item, so the originals keep updating underneath
+  const withEdits = d => own(state.edits, d.id) ? { ...d, ...state.edits[d.id], edited: true } : d;
+  const drill = id => (own(BY_ID, id) && withEdits(BY_ID[id])) || (own(state.custom, id) && state.custom[id]) || null;
+  const allDrills = () => DATA.drills.map(withEdits).concat(Object.values(state.custom));
+  const capOf = (d, i) => (d.caps && d.caps[i]) || DIAGRAMS[d.id].s[i][0]; // a step's caption, the coach's wording first
+  const stepsOf = d => d.steps || (d.sketch ? [{ ...d.sketch, text: '' }] : []); // your own items: drawn or photo steps (older ones had one sketch)
   const BOOK = new Set((DATA.groups.find(g => g.id === 'plays') || { cats: [] }).cats); // playbook categories
   // the Lake program (js/program.js): the "Runs at" ladder is a different idea from drill difficulty, so it never says "level"
   const P = DATA.program, LADDER = P.LADDER, VALUES = P.VALUES, keyOf = P.keyOf;
@@ -79,7 +83,7 @@
   // ---------- state ----------
   const KEY = 'practicebook.v1', RKEY = 'practicebook.run', SKEY = 'practicebook.synced';
   const read = k => { try { return JSON.parse(localStorage.getItem(k)); } catch (e) { return null; } };
-  const write = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* private mode: keep going in memory */ } };
+  const write = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; /* private mode or full: keep going in memory */ } };
 
   function planFrom(tpl, start) {
     const p = { id: uid(), name: 'New Practice', date: today(), start: start || '15:30', focus: '', message: '', items: [] };
@@ -95,7 +99,7 @@
     return p;
   }
   // program settings: our team, "We run this" overrides, Our 5, cleared "Staff to confirm" tags
-  const fresh = () => ({ team: '8', runs: {}, our5: [], confirmed: {}, sheet: { title: '', ids: [] } }); // sheet: the plays picked for the printed play sheet
+  const fresh = () => ({ team: '8', runs: {}, our5: [], confirmed: {}, sheet: { title: '', ids: [] }, edits: {} }); // sheet: the plays picked for the printed play sheet
   function seed() {
     const p = planFrom('plan1');
     return { v: 1, updated: 0, plans: { [p.id]: p }, current: p.id, custom: {}, notes: {}, installed: {}, sketch: { full: false, h: [], f: [] }, ...fresh() };
@@ -107,13 +111,13 @@
   const ours = it => it.mine ? state.runs[it.id] !== false : DATA.runsHere(it, state.team, state.runs);
   function save(rerender = true) {
     state.updated = Date.now();
-    write(KEY, state);
+    if (!write(KEY, state)) toast('This device is out of room, so that is not saved here. Delete a photo or an old play.');
     sync.push();
     if (rerender) render();
   }
 
   // ---------- sync through the artifact's per-person store (claude.ai); local-only elsewhere ----------
-  const merge = (to, from) => ['plans', 'custom', 'notes', 'installed', 'runs', 'confirmed'].forEach(k => {
+  const merge = (to, from) => ['plans', 'custom', 'notes', 'installed', 'runs', 'confirmed', 'edits'].forEach(k => {
     to[k] = to[k] || {};
     for (const id in from[k] || {}) if (!(id in to[k])) to[k][id] = from[k][id];
   });
@@ -311,7 +315,7 @@
     return `<div class="item${d.cat === 'BR' ? ' water' : ''}" style="${gc(d.cat)}"><div class="time num">${clock(start)}</div>
       <button class="body" data-act="open" data-id="${esc(d.id)}"><span class="nm">${esc(d.name)}</span>
       <span class="meta"><span class="cat-code">${esc(d.cat)}</span><span class="tag">${esc(DATA.cats[d.cat] || '')}</span>${d.college ? `<span class="college">${I.star}${esc(d.college.split(' (')[0])}</span>` : ''}</span></button>
-      <button class="ithumb" data-act="open" data-id="${esc(d.id)}" tabindex="-1" aria-hidden="true">${d.sketch ? sketchStatic(d.sketch, true) : thumb(d.id)}</button>${side}${tools}</div>`;
+      <button class="ithumb" data-act="open" data-id="${esc(d.id)}" tabindex="-1" aria-hidden="true">${stepsOf(d).length ? sketchStatic(stepsOf(d)[0], true) : thumb(d.id)}</button>${side}${tools}</div>`;
   }
 
   function planText(p) {
@@ -369,7 +373,7 @@
   const isProg = d => !!(d.from || d.candidate);
   function drillCard(d, picking, opts = {}) {
     return `<div class="drill-card${opts.dim ? ' dim' : ''}" style="${gc(d.cat)}">
-      <button class="thumb" data-act="open" data-id="${esc(d.id)}" aria-label="Open ${esc(d.name)}">${d.sketch ? sketchStatic(d.sketch, true) : thumb(d.id)}</button>
+      <button class="thumb" data-act="open" data-id="${esc(d.id)}" aria-label="Open ${esc(d.name)}">${stepsOf(d).length ? sketchStatic(stepsOf(d)[0], true) : thumb(d.id)}</button>
       <button class="info" data-act="open" data-id="${esc(d.id)}">
         <b>${esc(d.name)}</b>
         <span class="row" style="gap:8px"><span class="cat-code">${esc(d.id)}</span>${levelBars(d.level)}<span class="tag num">${d.min} min</span>${inPlan(d.id) && !picking ? '<span class="tag" style="color:var(--accent)">In plan</span>' : ''}</span>
@@ -440,7 +444,8 @@
     const turnedOff = all.filter(d => !d.candidate && d.from && rank(d.from) <= team && !ours(d));
     return `<div class="section-head" style="margin-top:0"><h2>Playbook</h2><button class="chip on" data-act="goteam" aria-label="Our team: ${esc(P.LEVEL_NAMES[state.team])}. Change it in the Program tab">Our team: ${esc(P.LEVEL_NAMES[state.team])}</button></div>
       <p class="muted" style="margin:0">Tap one to see it run, or + to add it to <b>${esc(cur().name)}</b>.</p>
-      <button class="btn" style="margin-top:12px" data-act="playsheet">${I.list}Play sheet for players${sheetIds().length ? ` · ${sheetIds().length} picked` : ''}</button>
+      <div class="row" style="gap:8px;margin-top:12px;flex-wrap:wrap"><button class="btn" data-act="newplay">${I.edit}Draw your own play</button>
+        <button class="btn" data-act="playsheet">${I.list}Play sheet for players${sheetIds().length ? ` · ${sheetIds().length} picked` : ''}</button></div>
       <div class="section-head pkg-head"><h2>Our Package</h2><span class="muted num">${pkg.length} plays &amp; defenses</span></div>
       ${P.TYPES.map(t => grp(P.typeLabels[t], off.filter(d => d.type === t), 'PL')).join('')}
       ${grp('More plays', off.filter(d => !P.TYPES.includes(d.type)), 'PL')}
@@ -494,10 +499,12 @@
     const plays = bookAll().filter(d => onSheet(d.id));
     return `<header class="ps-head"><h1>${esc(sheetTitle())}</h1><p>Lake Flyers · ${esc(teamName(state.team))} · Numbers are offense, X is defense. Each picture is one step: players are where the step starts, arrows show where they go.</p>${LEGEND}</header>
       ${plays.map(d => {
-        const dg = DIAGRAMS[d.id], pics = dg ? Court.stills({ ...dg, id: d.id }) : d.sketch ? [sketchStatic(d.sketch)] : [];
+        const dg = DIAGRAMS[d.id], my = stepsOf(d);
+        const pics = my.length ? my.map(s => sketchStatic(s)) : dg ? Court.stills({ ...dg, id: d.id }) : [];
+        const caps = my.length ? my.map(s => s.text || '') : dg ? dg.s.map((_, i) => capOf(d, i)) : [];
         return `<section class="ps-play"><div class="ps-top"><h2>${esc(d.name)}</h2><span>${esc([DATA.cats[d.cat] && d.cat !== 'PL' ? DATA.cats[d.cat] : '', typeName(d)].filter(Boolean).join(' · '))}</span>
           <p><b>Start:</b> ${esc(d.setup || '')}</p></div>
-          <div class="ps-steps${dg && dg.court === 'f' ? ' full' : ''}">${pics.map((svg, i) => `<figure>${svg}<figcaption>${dg ? `<b>${i + 1}</b> ${esc(dg.s[i][0])}` : ''}</figcaption></figure>`).join('')}</div>
+          <div class="ps-steps${(my.length ? my[0].full : dg && dg.court === 'f') ? ' full' : ''}">${pics.map((svg, i) => `<figure>${svg}<figcaption>${caps[i] || pics.length > 1 ? `<b>${i + 1}</b> ${esc(caps[i])}` : ''}</figcaption></figure>`).join('')}</div>
           ${d.points && d.points.length ? `<ul class="ps-points">${d.points.map(p => `<li>${esc(p)}</li>`).join('')}</ul>` : ''}</section>`;
       }).join('')}`;
   }
@@ -579,8 +586,10 @@
     </div>`;
   })();
   function boardBlock(id) {
-    const d = drill(id), dg = DIAGRAMS[id];
-    if (d.sketch) return `<div class="board-frame">${sketchStatic(d.sketch)}</div>`;
+    const d = drill(id), dg = DIAGRAMS[id], my = stepsOf(d);
+    if (my.length) return `<div class="my-steps"><div class="board-frame" data-pic>${sketchStatic(my[0])}</div>
+      ${my.length > 1 ? `<div class="player-bar"><div class="steps-dots" aria-label="Steps">${my.map((s, i) => `<button class="${i ? '' : 'on'}" data-act="mystep" data-id="${esc(id)}" data-i="${i}" aria-label="Step ${i + 1}">${i + 1}</button>`).join('')}</div></div>` : ''}
+      ${my.length > 1 || my[0].text ? `<div class="caption" aria-live="polite"><b>1</b><span>${esc(my[0].text || '')}</span></div>` : ''}</div>`;
     if (!dg) return `<div class="board-frame">${Court.blank(false)}</div>`;
     return `<div class="board-scope" data-id="${esc(id)}">
       <div class="board-frame"><div class="board-mount"></div></div>
@@ -601,7 +610,7 @@
         seen.add(i);
         const cap = $('.caption', scope);
         $('b', cap).textContent = i + 1;
-        $('span', cap).textContent = dg.s[i][0];
+        $('span', cap).textContent = capOf(drill(id), i);
         $$('.steps-dots button', scope).forEach((b, k) => { b.classList.toggle('on', k === i); b.classList.toggle('seen', seen.has(k) && k !== i); });
         const pb = $('.play', scope);
         pb.innerHTML = playing ? I.pause : I.play;
@@ -645,7 +654,7 @@
             <h1>${esc(d.name)}</h1>
             <div class="meta">${levelBars(d.level)}<span class="tag">${esc(d.level)}</span><span class="tag num">${d.min} min</span>
               ${d.num ? `<span class="numtag">${esc(d.num)}</span>` : ''}${d.type ? `<span class="tag type">${esc(typeName(d))}</span>` : ''}
-              ${d.college ? `<span class="college">${I.star}${esc(d.college)}</span>` : ''}${d.mine ? '<span class="college" style="background:var(--accent-soft);color:var(--accent)">Your drill</span>' : ''}</div>
+              ${d.college ? `<span class="college">${I.star}${esc(d.college)}</span>` : ''}${d.mine || d.edited ? `<span class="college" style="background:var(--accent-soft);color:var(--accent)">${d.mine ? 'Yours' : 'Edited by you'}</span>` : ''}</div>
             ${isProg(d) ? progRow(d) : ''}
           </div>
           ${boardBlock(id)}
@@ -662,7 +671,8 @@
           ${block('MS adaptation · progression', d.ms ? `<p>${esc(d.ms)}</p>` : '', 'adapt')}
           <section class="block"><h3>My notes</h3><textarea class="field" id="note-${esc(id)}" data-note="${esc(id)}" placeholder="What worked, who needs reps, how you changed it…">${esc(state.notes[id] || '')}</textarea></section>
           ${d.source || d.url ? `<p class="muted" style="font-size:14px;margin:0">Source: ${esc(d.source || '')}${d.url ? ` · <a href="${esc(d.url)}" target="_blank" rel="noopener">Original drill</a>` : ''}</p>` : ''}
-          ${d.mine ? `<div class="row"><button class="btn" data-act="editdrill" data-id="${esc(id)}">${I.edit}Edit drill</button><button class="btn" data-act="deldrill" data-id="${esc(id)}">${I.trash}Delete</button></div>` : ''}
+          <div class="row"><button class="btn" data-act="editdrill" data-id="${esc(id)}">${I.edit}Edit</button>${d.mine ? `<button class="btn" data-act="deldrill" data-id="${esc(id)}">${I.trash}Delete</button>`
+            : d.edited ? `<button class="btn" data-act="resetdrill" data-id="${esc(id)}">${I.undo}<span>Undo my edits</span></button>` : ''}</div>
         </div>
       </div></div>`;
     document.body.appendChild(ov);
@@ -806,12 +816,20 @@
     state.sketch = state.sketch || { full: false, h: [], f: [] };
     return { full: state.sketch.full, strokes: state.sketch.full ? state.sketch.f : state.sketch.h };
   };
+  // Photos are data URLs this app made (see addPhoto); anything else falls back to the court.
+  const PHOTO = /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/;
+  function boardSvg(sk, mini) {
+    const cls = `wb${mini ? ' mini' : ''}`;
+    if (!sk.img || !PHOTO.test(sk.img) || !(sk.w > 0 && sk.h > 0)) return Court.blank(sk.full).replace('class="wb"', `class="${cls}"`);
+    const H = Math.round(55 * sk.h / sk.w * 10) / 10; // same origin as the court, so a drawing keeps its place when a photo comes or goes
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="-27.5 -4.5 55 ${H}" class="${cls} photo"><image href="${sk.img}" x="-27.5" y="-4.5" width="55" height="${H}"/></svg>`;
+  }
   function sketchStatic(sk, mini) {
-    const s = Court.blank(sk.full).replace('class="wb"', `class="wb${mini ? ' mini' : ''}"`);
+    const s = boardSvg(sk, mini);
     return s.replace('</svg>', sk.strokes.map(st => `<path class="ink" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width=".55" stroke="${esc(st.c)}" d="${strokeD(st.d)}"/>`).join('') + '</svg>');
   }
   function mountSketch(el, sk, onChange) {
-    el.innerHTML = Court.blank(sk.full).replace('</svg>', '<g class="inks"></g></svg>');
+    el.innerHTML = boardSvg(sk).replace('</svg>', '<g class="inks"></g></svg>');
     const svg = $('svg', el), g = $('.inks', svg);
     svg.setAttribute('aria-label', 'Whiteboard. Draw with your finger or mouse.');
     const paint = () => { g.innerHTML = sk.strokes.map(s => `<path class="ink" stroke="${esc(s.c)}" d="${strokeD(s.d)}"/>`).join(''); };
@@ -854,52 +872,99 @@
       <p class="muted" style="font-size:14px">Draw up a set during a timeout, a fix in the middle of a drill, or next week's idea. It saves as you draw.</p>`;
   }
 
-  // ---------- custom drills ----------
+  // ---------- your own drills and plays, and edits to ours ----------
   let draft = null;
-  function openDrillForm(id) {
-    const d = id ? state.custom[id] : null;
-    draft = { sketch: d && d.sketch ? JSON.parse(JSON.stringify(d.sketch)) : { full: false, strokes: [] } };
+  const curStep = () => draft.steps[draft.i];
+  function openDrillForm(id, opts = {}) {
+    const d = id ? drill(id) : null, base = d && !d.mine ? BY_ID[id] : null; // base: a built-in item, edited on top
+    const play = d ? BOOK.has(d.cat) : !!opts.play, noun = play ? 'play' : 'drill', dg = base && DIAGRAMS[id];
+    draft = { i: 0, dirty: false, steps: d && d.mine ? JSON.parse(JSON.stringify(stepsOf(d))) : [] };
+    if (!base && !draft.steps.length) draft.steps.push({ full: false, strokes: [], text: '' });
+    const cats = Object.entries(DATA.cats).filter(([c]) => !play || BOOK.has(c));
     const ov = document.createElement('div');
     ov.className = 'overlay'; ov.id = 'drillform';
     ov.innerHTML = `<div class="overlay-bar"><button class="icon-btn ghost" data-act="closeform" aria-label="Close">${I.back}</button>
-      <div class="ttl">${d ? 'Edit drill' : 'Add your own drill'}</div><button class="btn primary" form="dform" type="submit">${I.check}Save</button></div>
+      <div class="ttl">${base ? `Edit ${noun}` : d ? `Edit your ${noun}` : play ? 'Draw your own play' : 'Add your own drill'}</div><button class="btn primary" form="dform" type="submit">${I.check}Save</button></div>
       <div class="overlay-body"><form id="dform" class="detail" data-id="${esc(id || '')}">
         <div class="stack">
-          <label class="lbl">Drill name<input class="field" name="name" id="f-name" required value="${esc(d ? d.name : '')}" placeholder="e.g. Shell Drill with Skip"></label>
-          <div class="plan-meta" style="grid-template-columns:repeat(3,minmax(0,1fr))">
-            <label class="lbl">Category<select class="field" name="cat" id="f-cat">${Object.entries(DATA.cats).map(([c, n]) => `<option value="${c}" ${d && d.cat === c ? 'selected' : ''}>${c} · ${esc(n)}</option>`).join('')}</select></label>
-            <label class="lbl">Minutes<input class="field" name="min" id="f-min" type="number" min="1" max="60" value="${d ? d.min : 6}"></label>
+          <label class="lbl">Name<input class="field" name="name" id="f-name" required maxlength="80" value="${esc(d ? d.name : '')}" placeholder="${play ? 'e.g. Bulldog' : 'e.g. Shell Drill with Skip'}"></label>
+          <div class="plan-meta" style="grid-template-columns:repeat(${base ? 2 : 3},minmax(0,1fr))">
+            ${base ? '' : `<label class="lbl">Category<select class="field" name="cat" id="f-cat">${cats.map(([c, n]) => `<option value="${c}" ${(d ? d.cat === c : play && c === 'PL') ? 'selected' : ''}>${c} · ${esc(n)}</option>`).join('')}</select></label>`}
+            <label class="lbl">Minutes<input class="field" name="min" id="f-min" type="number" min="1" max="60" value="${d ? d.min : play ? 8 : 6}"></label>
             <label class="lbl">Level<select class="field" name="level" id="f-level">${LEVELS.map(l => `<option ${d && d.level === l ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
           </div>
-          <label class="lbl">Players &amp; equipment<input class="field" name="players" id="f-players" value="${esc(d ? d.players : '')}" placeholder="Groups of 3, 1 ball"></label>
-          <label class="lbl">Setup<textarea class="field" name="setup" id="f-setup">${esc(d ? d.setup : '')}</textarea></label>
-          <label class="lbl">How it runs<textarea class="field" name="runs" id="f-runs">${esc(d ? d.runs : '')}</textarea></label>
+          ${play && !base ? `<label class="lbl">Kind of play (offense only)<select class="field" name="type"><option value="">Other</option>${P.TYPES.map(t => `<option value="${esc(t)}" ${d && d.type === t ? 'selected' : ''}>${esc(P.typeLabels[t])}</option>`).join('')}</select></label>` : ''}
+          <label class="lbl">Players${play ? '' : ' &amp; equipment'}<input class="field" name="players" id="f-players" value="${esc(d ? d.players : play ? '5 players, half court' : '')}" placeholder="Groups of 3, 1 ball"></label>
+          <label class="lbl">Setup${play ? ' · starting spots' : ''}<textarea class="field" name="setup" id="f-setup">${esc(d ? d.setup : '')}</textarea></label>
+          <label class="lbl">How it runs · notes<textarea class="field" name="runs" id="f-runs">${esc(d ? d.runs : '')}</textarea></label>
           <label class="lbl">Coaching points (one per line)<textarea class="field" name="points" id="f-points">${esc(d && d.points ? d.points.join('\n') : '')}</textarea></label>
-          <label class="lbl">Make it harder / easier<textarea class="field" name="ms" id="f-ms">${esc(d ? d.ms : '')}</textarea></label>
+          <label class="lbl">${play ? 'Teaching it' : 'Make it harder / easier'}<textarea class="field" name="ms" id="f-ms">${esc(d ? d.ms : '')}</textarea></label>
         </div>
-        <div class="stack">
-          <div class="row" style="justify-content:space-between"><span class="eyebrow">Draw it up</span>
-            <div class="chips"><button type="button" class="chip ${!draft.sketch.full ? 'on' : ''}" data-act="fcourt" data-v="0">Half</button><button type="button" class="chip ${draft.sketch.full ? 'on' : ''}" data-act="fcourt" data-v="1">Full</button></div></div>
-          <div class="sketch-tools">${penTools('f')}</div>
-          <div class="board-frame sketch-wrap" id="fsketch"></div>
-        </div>
+        <div class="stack">${base ? (dg ? `<span class="eyebrow">What each step says</span>
+            <p class="muted" style="margin:0">The diagrams stay as they are. Change the words the players read under each step.</p>
+            ${Court.stills({ ...dg, id }).map((svg, i) => `<div class="cap-edit"><div class="board-frame">${svg}</div>
+              <label class="lbl">Step ${i + 1}<textarea class="field" name="cap" placeholder="${esc(dg.s[i][0])}">${esc(capOf(d, i))}</textarea></label></div>`).join('')}` : '')
+          : '<div id="fsteps"></div><input type="file" id="fphotoin" accept="image/*" hidden data-upload>'}</div>
       </form></div>`;
     document.body.appendChild(ov);
-    mountSketch($('#fsketch'), draft.sketch, () => {});
+    paintSteps();
     $('#dform').addEventListener('submit', e => {
       e.preventDefault();
-      const f = new FormData(e.target), oldId = e.target.dataset.id;
-      const nid = oldId || 'MY-' + pad(Object.keys(state.custom).length + 1) + uid().slice(0, 2).toUpperCase();
-      state.custom[nid] = {
-        id: nid, mine: true, name: f.get('name').trim(), cat: f.get('cat'), min: Math.max(1, +f.get('min') || 5), level: f.get('level'),
-        players: f.get('players').trim(), setup: f.get('setup').trim(), runs: f.get('runs').trim(), ms: f.get('ms').trim(),
-        points: f.get('points').split('\n').map(s => s.trim()).filter(Boolean),
-        sketch: draft.sketch.strokes.length ? draft.sketch : null, source: 'Your drill',
-      };
-      thumbs.delete(nid);
+      const f = new FormData(e.target), oldId = e.target.dataset.id, t = k => String(f.get(k) || '').trim();
+      const fields = { name: t('name'), min: Math.max(1, Math.min(60, +f.get('min') || 5)), level: f.get('level'), players: t('players'), setup: t('setup'),
+        runs: t('runs'), ms: t('ms'), points: String(f.get('points') || '').split('\n').map(x => x.trim()).filter(Boolean) };
+      if (base) { // keep only what differs from the original
+        const ch = {};
+        for (const [k, v] of Object.entries(fields)) if (JSON.stringify(v) !== JSON.stringify(base[k] ?? (k === 'points' ? [] : ''))) ch[k] = v;
+        const caps = f.getAll('cap').map(x => String(x).trim());
+        if (dg && caps.some((c, i) => c && c !== dg.s[i][0])) ch.caps = caps.map((c, i) => (c === dg.s[i][0] ? '' : c)); // '' = the original wording
+        if (Object.keys(ch).length) state.edits[id] = ch; else delete state.edits[id];
+      } else {
+        const nid = oldId || 'MY-' + pad(Object.keys(state.custom).length + 1) + uid().slice(0, 2).toUpperCase();
+        const cat = f.get('cat'), steps = draft.steps.filter(x => x.strokes.length || x.img || (x.text || '').trim()).map(x => ({ ...x, text: (x.text || '').trim() }));
+        state.custom[nid] = { id: nid, mine: true, cat, ...fields, type: (cat === 'PL' && f.get('type')) || undefined, steps, source: BOOK.has(cat) ? 'Your play' : 'Your drill' };
+      }
       ov.remove(); save(); refreshDetail();
-      toast(oldId ? 'Drill updated' : 'Drill added to the library');
+      toast(base ? (state.edits[id] ? 'Saved your changes' : 'No changes from the original') : oldId ? 'Saved' : BOOK.has(f.get('cat')) ? 'Play added to the Playbook' : 'Drill added to the library');
     });
+  }
+  // the step editor: one board at a time, tabs to move between steps
+  function paintSteps() {
+    const box = $('#fsteps');
+    if (!box) return;
+    const s = curStep(), n = draft.steps.length, empty = !s.strokes.length && !s.img;
+    box.innerHTML = `<div class="row" style="justify-content:space-between"><span class="eyebrow">Diagrams, step by step</span>
+        <div class="chips"><button type="button" class="chip ${!s.full ? 'on' : ''}" data-act="fcourt" data-v="0">Half</button><button type="button" class="chip ${s.full ? 'on' : ''}" data-act="fcourt" data-v="1">Full</button></div></div>
+      <div class="steps-dots" style="flex:none;margin-bottom:12px">${draft.steps.map((_, k) => `<button type="button" class="${k === draft.i ? 'on' : ''}" data-act="fstep" data-i="${k}" aria-label="Step ${k + 1}" aria-pressed="${k === draft.i}">${k + 1}</button>`).join('')}<button type="button" data-act="faddstep" aria-label="Add a step">+</button></div>
+      <div class="sketch-tools">${penTools('f')}</div>
+      <div class="board-frame sketch-wrap" id="fsketch"></div>
+      <div class="row" style="gap:8px;flex-wrap:wrap;margin-top:10px">
+        <button type="button" class="btn small" data-act="fphoto">${s.img ? 'Replace photo' : 'Upload a photo'}</button>
+        ${s.img ? '<button type="button" class="btn small" data-act="fnophoto">Remove photo</button>' : ''}
+        ${draft.i && empty ? `<button type="button" class="btn small" data-act="fcopystep">Start from step ${draft.i}</button>` : ''}
+        ${n > 1 ? `<button type="button" class="btn small" data-act="fdelstep">${I.trash}Delete step ${draft.i + 1}</button>` : ''}
+      </div>
+      <label class="lbl" style="margin-top:12px">Step ${draft.i + 1}: what happens<textarea class="field" data-steptext placeholder="1 passes to 2 and cuts to the rim…">${esc(s.text || '')}</textarea></label>`;
+    mountSketch($('#fsketch'), s, () => { draft.dirty = true; });
+  }
+  // A phone photo is several MB; shrink it so it fits in the browser's storage (and the account sync).
+  async function addPhoto(file) {
+    if (file.type && !file.type.startsWith('image/')) { toast('Pick a photo or a picture file.'); return; }
+    const st = curStep(), url = URL.createObjectURL(file);
+    try {
+      const im = new Image();
+      im.src = url;
+      await im.decode();
+      const k = Math.min(1, 1000 / Math.max(im.naturalWidth, im.naturalHeight)), c = document.createElement('canvas');
+      c.width = Math.round(im.naturalWidth * k); c.height = Math.round(im.naturalHeight * k);
+      const g = c.getContext('2d');
+      g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); g.drawImage(im, 0, 0, c.width, c.height);
+      Object.assign(st, { img: c.toDataURL('image/jpeg', 0.6), w: c.width, h: c.height });
+      draft.dirty = true;
+      if ($('#fsteps')) paintSteps();
+    } catch (err) {
+      toast('Could not read that photo. Try a JPEG or PNG.');
+    } finally { URL.revokeObjectURL(url); }
   }
 
   // ---------- notes ----------
@@ -1120,11 +1185,34 @@
       if (!clearArmed) { clearArmed = true; render(); setTimeout(() => { clearArmed = false; if (view === 'board') render(); }, 3000); return; }
       clearArmed = false; sketchData().strokes.length = 0; save();
     },
-    fcourt: el => { draft.sketch.full = el.dataset.v === '1'; draft.sketch.strokes = []; mountSketch($('#fsketch'), draft.sketch, () => {}); $$('[data-act="fcourt"]').forEach(b => b.classList.toggle('on', b === el)); },
-    fundo: () => { draft.sketch.strokes.pop(); $('#fsketch')._redraw(); },
-    fclear: () => { draft.sketch.strokes.length = 0; $('#fsketch')._redraw(); },
-    closeform: () => $('#drillform').remove(),
+    fcourt: el => { draft.steps.forEach(s => { s.full = el.dataset.v === '1'; }); paintSteps(); }, // the drawing stays: both courts share the top basket
+    fundo: () => { curStep().strokes.pop(); $('#fsketch')._redraw(); },
+    fclear: () => { curStep().strokes.length = 0; $('#fsketch')._redraw(); },
+    fstep: el => { draft.i = +el.dataset.i; paintSteps(); },
+    faddstep: () => { draft.steps.push({ full: curStep().full, strokes: [], text: '' }); draft.i = draft.steps.length - 1; draft.dirty = true; paintSteps(); },
+    fcopystep: () => { const p = draft.steps[draft.i - 1]; Object.assign(curStep(), JSON.parse(JSON.stringify({ ...p, text: curStep().text }))); paintSteps(); },
+    fdelstep: el => {
+      if (!el.dataset.armed) { el.dataset.armed = 1; el.lastChild.textContent = 'Tap again to delete'; el.style.color = 'var(--bad)'; return; }
+      draft.steps.splice(draft.i, 1); draft.i = Math.max(0, draft.i - 1); draft.dirty = true; paintSteps();
+    },
+    fphoto: () => $('#fphotoin').click(),
+    fnophoto: () => { const s = curStep(); delete s.img; delete s.w; delete s.h; draft.dirty = true; paintSteps(); },
+    mystep: el => {
+      const box = el.closest('.my-steps'), i = +el.dataset.i, s = stepsOf(drill(el.dataset.id))[i];
+      $('[data-pic]', box).innerHTML = sketchStatic(s);
+      $('.caption b', box).textContent = i + 1; $('.caption span', box).textContent = s.text || '';
+      $$('.steps-dots button', box).forEach(b => b.classList.toggle('on', b === el));
+    },
+    closeform: el => { // one stray tap must not throw away a drawn-up play
+      if (draft && draft.dirty && !el.dataset.armed) { el.dataset.armed = 1; toast('Tap back again to throw away your changes'); return; }
+      $('#drillform').remove();
+    },
     newdrill: () => openDrillForm(),
+    newplay: () => openDrillForm(null, { play: true }),
+    resetdrill: el => {
+      if (!el.dataset.armed) { el.dataset.armed = 1; el.lastChild.textContent = 'Tap again: back to the original'; el.style.color = 'var(--bad)'; return; }
+      delete state.edits[el.dataset.id]; save(); refreshDetail(); toast('Back to the original');
+    },
     editdrill: el => openDrillForm(el.dataset.id),
     deldrill: el => {
       if (!el.dataset.armed) { el.dataset.armed = 1; el.lastChild.textContent = 'Tap again to delete'; el.style.color = 'var(--bad)'; return; }
@@ -1191,9 +1279,12 @@
   let noteTimer = 0;
   document.addEventListener('input', e => {
     const el = e.target;
+    if (draft && el.closest('#drillform')) draft.dirty = true;
     if (el.dataset.field) {
       cur()[el.dataset.field] = el.value;
       if (el.dataset.field === 'name' || el.dataset.field === 'focus' || el.dataset.field === 'message') save(false);
+    } else if ('steptext' in el.dataset) {
+      curStep().text = el.value;
     } else if ('sheettitle' in el.dataset) {
       state.sheet.title = el.value;
       clearTimeout(noteTimer); noteTimer = setTimeout(() => save(false), 600);
@@ -1208,6 +1299,7 @@
     }
   });
   document.addEventListener('change', e => {
+    if ('upload' in e.target.dataset) { const file = e.target.files[0]; e.target.value = ''; if (file) addPhoto(file); return; }
     if (e.target.dataset.field === 'date' || e.target.dataset.field === 'start') save();
   });
   document.addEventListener('keydown', e => {
