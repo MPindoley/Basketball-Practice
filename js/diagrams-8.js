@@ -538,6 +538,63 @@ Object.assign(DIAGRAMS, {
   },
 });
 
+// The coach's Laker series (same start as Laker) and Doc, rebuilt point for point from the play sheet he printed from the app.
+Object.assign(DIAGRAMS, {
+  'PL-20': {
+    p: { '1*': [-7, 34.5], 2: [21, 11], 3: [-21, 11], 4: [12.5, 31], 5: [7.5, 8] },
+    s: [
+      ['4 cuts through to the left corner as 5 lifts to the pinch post. 3 lifts on the left and 1 dribbles over.',
+        [['c', '4', [9.5, 16.4], [5.8, 9.9], [-8.6, 4.6], [-21.2, 4.8]], ['c', '3', [-17.7, 18.1]], ['c', '5', [8.9, 14.6], [5.6, 23.3]], ['d', '1', [-3.8, 32.3], [-4, 30.7]]]],
+      ['1 passes to 5 at the pinch post and screens for 3. 3 comes off the screen and cuts to the rim.',
+        [['p', '1', '5'], '|', ['s', '1', [-13.7, 20.5]], '|', ['c', '3', [-15.2, 23], [-10, 22.8], [-3, 15.9], [-0.2, 9.5]]]],
+      ['5 hits 1 back and sets the ball screen; 1 drives off it to the middle. Same time, 2 screens for 3, who pops out to the right wing.',
+        [['p', '5', '1'], '|', ['s', '5', [-9.2, 19.8]], ['s', '2', [10.5, 10.4]], '|', ['d', '1', [-8.8, 23.6], [-3.5, 22.6], [-0.4, 16.7]], ['c', '3', [6.5, 7.3], [12.1, 8.4], [18.4, 20.1]]]],
+      ['1 kicks it to 3 for the shot as 5 rolls to the rim.',
+        [['p', '1', '3'], ['c', '5', [-9.1, 12.6], [-6.2, 8.5]], '|', ['sh', '3']]],
+    ],
+  },
+  'PL-21': {
+    p: { '1*': [-11.5, 31], 2: [21.5, 10], 3: [-21, 11], 4: [12.5, 31.5], 5: [7.5, 8] },
+    s: [
+      ['1 dribbles toward the high post and then passes to the pinch post. 4 rub cuts through to the other side.',
+        [['c', '4', [10.4, 19.4], [6, 11.9], [-2.5, 7.4], [-20.8, 5.5]], ['c', '3', [-19.3, 18.4]], ['c', '5', [5.2, 14.8], [5.1, 22.9]], ['d', '1', [-4.7, 29.1]]]],
+      ['1 then runs ball side to set a screen. 2 rejects the screen back door for the pass, or 1 pops for a shot.',
+        [['p', '1', '5'], '|', ['s', '1', [7.9, 27], [15.1, 20.7], [19.1, 14.7]], ['c', '2', [6.1, 8.7]]]],
+      ['Back door shot.',
+        [['p', '5', '2'], '|', ['sh', '2']]],
+    ],
+  },
+  'PL-22': {
+    p: { '1*': [-10, 34.5], 2: [21.5, 13], 3: [-21, 13.5], 4: [11.5, 31.5], 5: [7.5, 8] },
+    s: [
+      ['Same set up as all the other Lakers.',
+        [['c', '4', [10.2, 18.9], [3, 10], [-5.5, 7.1], [-20.5, 6]], ['c', '5', [7.7, 19.5], [4.6, 23.9]], ['d', '1', [-2.3, 30.6]], ['c', '3', [-17, 19.5]]]],
+      ['1 will spin, and on the spin cue 3 will go back door.',
+        [['d', '1', [-0.5, 32.3], [-4.5, 32.9], [-8.4, 28.8]], ['c', '3', [-7.5, 10.4]]]],
+      ['1 and 4 do a dribble handoff, and 5 will screen for 4. 3 clears out and comes off the back screen for a 2.',
+        [['d', '1', [-7.6, 23.4], [-10.5, 20.8]], ['c', '4', [-17.2, 20.5], [-11.2, 23.4]], ['s', '2', [13.4, 11.3]], '|',
+          ['p', '1', '4'], ['c', '3', [4.6, 7.3], [11.5, 8.4], [18.4, 11.6], [20, 18.4]]]],
+      ['4 looks to drive as 5 rolls to the rim. Has 3 for the kick out three.',
+        [['s', '5', [-6.9, 21.7]], ['c', '1', [-17.4, 17.2]], '|', ['d', '4', [-5, 24.7], [1, 24.6], [4.8, 20], [5.1, 12.8]], ['c', '5', [-2.3, 15.4], [-3.5, 9.3]]]],
+      ['4 kicks out and 3 shoots the three.',
+        [['p', '4', '3'], '|', ['sh', '3']]],
+    ],
+  },
+  'OB-14': {
+    p: { 1: [-6.5, 8], 2: [6, 7], '3*': [6.5, -3], 4: [-6.5, 17.5], 5: [6, 17.5] },
+    s: [
+      ['Strong side sets the elevator screen for the backside block: 2 and 5 close the gap and 1 runs through it to the wing.',
+        [['s', '2', [7.7, 10.5], [5.7, 11.5]], ['s', '5', [7.5, 14.1], [6, 13.5]], ['c', '1', [2.4, 12.1], [18.9, 12.2]]]],
+      ['3 passes to 1 coming off the elevator. The bottom screener screens for the opposite elbow; the top screener pops up for an outlet.',
+        [['p', '3', '1'], ['s', '2', [-4.6, 15.5]], ['c', '5', [2.5, 26.1]]]],
+      ['The elbow comes off the screen and dives to the basket. 3 pops to the corner after the pass.',
+        [['c', '4', [-2.1, 17.8], [0.6, 15.9], [4.6, 5.4]], ['c', '3', [20.8, 4.7]]]],
+      ['1 either shoots or waits for 4 to dive and get open on the block. Too hard for 1? Swing to 3, then enter to 4.',
+        [['p', '1', '4'], ['c', '2', [-6.3, 11.4], [-4.7, 6.7]], '|', ['sh', '4']]],
+    ],
+  },
+});
+
 // Bulldog, the coach's press break. Steps 3 and 4 are other entries from the same picture, so they start where step 1 ended.
 Object.assign(DIAGRAMS, {
   'OB-13': {
