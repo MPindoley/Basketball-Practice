@@ -478,9 +478,9 @@
     const grp = (title, list, cat) => list.length ? `<section class="group" style="${gc(cat)}"><h2>${esc(title)}</h2><div class="drill-list">${list.map(d => drillCard(d, false, { sheet: true })).join('')}</div></section>` : '';
     const mine = all.filter(ours), off = mine.filter(d => d.cat === 'PL');
     ov.innerHTML = `<div class="overlay-bar"><button class="icon-btn ghost" data-act="closeplaysheet" aria-label="Close">${I.back}</button>
-      <div class="ttl">Play sheet</div><button class="btn primary small" data-act="sheetprint" ${n ? '' : 'disabled'}>Print · ${n}</button></div>
+      <div class="ttl">Play sheet</div><button class="btn primary small" data-act="sheetprint" ${n ? '' : 'disabled'}>${inClaude ? 'Save to print' : 'Print'} · ${n}</button></div>
       <div class="overlay-body">
-        <p class="muted" style="margin:0 0 12px">Tick the plays and defenses the players need to study, then Print. Each one prints with its step-by-step diagrams and coaching points. Your picks are saved.</p>
+        <p class="muted" style="margin:0 0 12px">Tick the plays and defenses the players need to study, then ${inClaude ? 'Save to print: you get a page to open and print' : 'Print'}. Each one prints with its step-by-step diagrams and coaching points. Your picks are saved.</p>
         <label class="lbl">Title on the sheet<input class="field" data-sheettitle value="${esc(state.sheet.title)}" placeholder="${esc(sheetTitle())}" maxlength="60"></label>
         <div class="row" style="gap:8px;margin-top:10px;flex-wrap:wrap"><button class="btn small" data-act="sheetall">Pick all of Our Package</button><button class="btn small" data-act="sheetclear" ${n ? '' : 'disabled'}>Clear</button></div>
         ${P.TYPES.map(t => grp(P.typeLabels[t], off.filter(d => d.type === t), 'PL')).join('')}
@@ -513,13 +513,27 @@
           ${d.points && d.points.length ? `<ul class="ps-points">${d.points.map(p => `<li>${esc(p)}</li>`).join('')}</ul>` : ''}</section>`;
       }).join('')}`;
   }
-  function printPlaySheet() {
+  // Inside Claude the print dialog is blocked, so there the sheet is saved as a page to open and print.
+  const inClaude = !!(window.claude && window.claude.use);
+  async function printPlaySheet() {
     $('#printsheet') && $('#printsheet').remove();
     const el = document.createElement('div');
     el.id = 'printsheet';
     el.innerHTML = printSheetHtml();
     document.body.appendChild(el);
-    window.print();
+    const dl = inClaude ? await window.claude.use('downloads').catch(() => null) : null;
+    if (!dl) { window.print(); return; }
+    // the print styles apply on screen too in the saved page, so it opens looking like the printout
+    const css = (await fetch('css/app.css').then(r => r.text()).catch(() => '')).replace('@media print {', '@media all {');
+    const doc = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${esc(sheetTitle())}</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@400;500;600;700&family=Kalam:wght@400;700&display=swap">
+<style>${css}\n#printsheet { max-width: 7.5in; margin: 0 auto; padding: 16px; }</style></head><body>${el.outerHTML}</body></html>`;
+    try {
+      await dl.save({ filename: (sheetTitle().replace(/[^A-Za-z0-9 _-]+/g, '').trim() || 'Play Sheet') + '.html', data: doc });
+      toast('Saved. Open the file and print it from there.');
+    } catch (e) {
+      if (!e || e.code !== 'declined') toast('Could not save the sheet here. Print it from the GitHub Pages copy.');
+    }
   }
 
   // ---------- picker overlay ----------
