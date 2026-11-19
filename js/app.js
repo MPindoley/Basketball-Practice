@@ -450,7 +450,8 @@
     return `<div class="section-head" style="margin-top:0"><h2>Playbook</h2><button class="chip on" data-act="goteam" aria-label="Our team: ${esc(P.LEVEL_NAMES[state.team])}. Change it in the Program tab">Our team: ${esc(P.LEVEL_NAMES[state.team])}</button></div>
       <p class="muted" style="margin:0">Tap one to see it run, or + to add it to <b>${esc(cur().name)}</b>.</p>
       <div class="row" style="gap:8px;margin-top:12px;flex-wrap:wrap"><button class="btn" data-act="newplay">${I.edit}Draw your own play</button>
-        <button class="btn" data-act="playsheet">${I.list}Play sheet for players${sheetIds().length ? ` · ${sheetIds().length} picked` : ''}</button></div>
+        <button class="btn" data-act="playsheet">${I.list}Play sheet for players${sheetIds().length ? ` · ${sheetIds().length} picked` : ''}</button>
+        <button class="btn" data-act="moveplays">${I.swap}Move plays</button></div>
       <div class="section-head pkg-head"><h2>Our Package</h2><span class="muted num">${pkg.length} plays &amp; defenses</span></div>
       ${P.TYPES.map(t => grp(P.typeLabels[t], off.filter(d => d.type === t), 'PL')).join('')}
       ${grp('More plays', off.filter(d => !P.TYPES.includes(d.type)), 'PL')}
@@ -886,6 +887,7 @@
   // The play editor writes the same diagram format as the built-in plays (see js/diagrams-1.js), so they animate the same way.
   let draft = null, tool = 'c';
   const TOOLS = [['c', 'Cut'], ['d', 'Dribble'], ['p', 'Pass'], ['s', 'Screen'], ['sh', 'Shot']];
+  const newId = () => 'MY-' + pad(Object.keys(state.custom).length + 1) + uid().slice(0, 2).toUpperCase();
   const startDg = () => ({ p: { '1*': [0, 28], 2: [17, 18], 3: [-17, 18], 4: [-7.5, 8], 5: [7.5, 8] }, s: [['', []]] });
   const pkey = (p, id) => Object.keys(p).find(k => k.replace(/\*/g, '') === id);
   const tryBuild = dg => { try { Court.build({ ...dg, id: 'edit' }); return null; } catch (e) { return e; } };
@@ -933,7 +935,7 @@
         if (JSON.stringify(draft.dg) !== JSON.stringify(DIAGRAMS[id])) ch.dg = draft.dg;
         if (Object.keys(ch).length) state.edits[id] = ch; else delete state.edits[id];
       } else {
-        key = oldId || 'MY-' + pad(Object.keys(state.custom).length + 1) + uid().slice(0, 2).toUpperCase();
+        key = oldId || newId();
         const cat = f.get('cat'), dg = draft.dg;
         dg.s = dg.s.filter(([c, acts]) => c.trim() || acts.some(a => a !== '|'));
         if (!dg.s.length) dg.s.push(['', []]);
@@ -1076,6 +1078,85 @@
     } else dr.photo = { img: c.toDataURL('image/jpeg', 0.6), w: c.width, h: c.height };
     dr.dirty = true;
     if (draft === dr) paintPhoto();
+  }
+
+  // ---------- move your plays between copies of the app (GitHub Pages and the Claude link keep separate storage) ----------
+  const moveCount = () => Object.keys(state.custom).length + Object.keys(state.edits).length;
+  const moveSheet = () => `<h2>Move your plays</h2>
+    <p class="muted" style="margin:0 0 12px">The GitHub Pages copy and your Claude link keep separate storage. This moves the plays and drills you made, and your edits to ours, from one to the other.</p>
+    <div class="stack" style="gap:10px">
+      <b>1. In the copy that has them</b>
+      <button class="btn block" data-act="xcopy" ${moveCount() ? '' : 'disabled'}>${I.copy}${moveCount() ? `Copy my plays · ${moveCount()}` : 'Nothing to copy here'}</button>
+      <b>2. In the copy you want them in</b>
+      <label class="lbl">Paste here<textarea class="field" id="xin" rows="4" placeholder="Paste the copied plays"></textarea></label>
+      <button class="btn primary block" data-act="ximport">${I.check}Add these plays</button>
+    </div>`;
+  // Pasted text is checked field by field; anything that does not look like this app's own data is dropped.
+  const SPOTRE = /^f?[a-z]+(?:[+-][\d.]+,[+-]?[\d.]+)?$/, IDRE = /^[A-Za-z0-9]{1,6}$/;
+  const okPt = v => (Array.isArray(v) ? v.length === 2 && v.every(Number.isFinite) : typeof v === 'string' && SPOTRE.test(v));
+  function cleanDg(dg, base) {
+    if (!dg || typeof dg !== 'object' || !dg.p || typeof dg.p !== 'object' || !Array.isArray(dg.s)) return null;
+    const p = {};
+    for (const [k, v] of Object.entries(dg.p)) { if (!/^[A-Za-z0-9]{1,6}\*{0,4}$/.test(k) || !okPt(v)) return null; p[k] = v; }
+    const okAct = a => a === '|' || (Array.isArray(a) && IDRE.test(a[0]) && IDRE.test(a[1]) && a.slice(2).every(x => okPt(x) || (typeof x === 'string' && IDRE.test(x))));
+    const s = dg.s.map(st => (Array.isArray(st) && typeof st[0] === 'string' && Array.isArray(st[1]) && st[1].every(okAct) ? (Number.isInteger(st[2]) ? [st[0], st[1], st[2]] : [st[0], st[1]]) : null));
+    if (!s.length || s.includes(null)) return null;
+    const out = { ...(dg.court === 'f' ? { court: 'f' } : {}), p, s };
+    if (base) for (const k of ['n', 'z', 'c']) if (base[k]) out[k] = base[k]; // board labels only ever come from our own diagrams
+    return tryBuild(out) ? null : out;
+  }
+  const cleanFields = o => {
+    const out = {};
+    for (const k of ['name', 'players', 'setup', 'runs', 'ms']) if (typeof o[k] === 'string') out[k] = o[k].slice(0, 4000);
+    if (LEVELS.includes(o.level)) out.level = o.level;
+    if (Number.isFinite(o.min)) out.min = Math.max(1, Math.min(60, Math.round(o.min)));
+    if (Array.isArray(o.points)) out.points = o.points.filter(x => typeof x === 'string').map(x => x.slice(0, 400)).slice(0, 30);
+    return out;
+  };
+  function cleanItem(raw) {
+    if (!raw || typeof raw !== 'object' || typeof raw.name !== 'string' || !raw.name.trim() || !own(DATA.cats, raw.cat)) return null;
+    const d = { id: String(raw.id || ''), mine: true, cat: raw.cat, min: 6, level: 'Foundation', ...cleanFields(raw), source: BOOK.has(raw.cat) ? 'Your play' : 'Your drill' };
+    if (raw.cat === 'PL' && P.TYPES.includes(raw.type)) d.type = raw.type;
+    if (raw.dg) { const dg = cleanDg(raw.dg); if (dg) d.dg = dg; }
+    if (raw.sketch && Array.isArray(raw.sketch.strokes)) d.sketch = { full: !!raw.sketch.full, strokes: raw.sketch.strokes.filter(st => st && /^#[0-9a-f]{6}$/i.test(st.c) && Array.isArray(st.d) && st.d.every(okPt) && st.d.every(Array.isArray)) };
+    if (raw.photo && PHOTO.test(raw.photo.img || '') && raw.photo.w > 0 && raw.photo.h > 0) d.photo = { img: raw.photo.img, w: +raw.photo.w, h: +raw.photo.h };
+    return d;
+  }
+  async function importPlays(text) {
+    let data = null;
+    try { data = JSON.parse(text.trim()); } catch (e) { /* not JSON: handled below */ }
+    if (!data || data.app !== 'practicebook-plays' || !data.custom || typeof data.custom !== 'object' || !data.edits || typeof data.edits !== 'object') {
+      toast("That isn't a plays code from this app. Copy it again and paste all of it."); return;
+    }
+    const assets = inClaude ? await window.claude.use('assets').catch(() => null) : null;
+    let added = 0, edits = 0, here = 0, bad = 0, noPhoto = 0;
+    for (const raw of Object.values(data.custom)) {
+      const d = cleanItem(raw);
+      if (!d) { bad++; continue; }
+      if (Object.values(state.custom).some(x => x.name === d.name && x.cat === d.cat && JSON.stringify(x.dg || null) === JSON.stringify(d.dg || null))) { here++; continue; }
+      if (!/^MY-[A-Z0-9]{1,12}$/.test(d.id) || own(state.custom, d.id) || own(BY_ID, d.id)) d.id = newId();
+      if (d.photo && assets) { // the synced record can't hold photos: move it to the artifact's file storage
+        try {
+          const [head, b64] = d.photo.img.split(','), bin = atob(b64), bytes = new Uint8Array(bin.length), type = head.slice(5, head.indexOf(';'));
+          for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+          const up = await assets.upload(new Blob([bytes], { type }), { type });
+          d.photo = { id: up.id, w: d.photo.w, h: d.photo.h };
+        } catch (e) { delete d.photo; noPhoto++; }
+      }
+      state.custom[d.id] = d; thumbs.delete(d.id); added++;
+    }
+    for (const [id, e] of Object.entries(data.edits)) {
+      if (!own(BY_ID, id) || !e || typeof e !== 'object') { bad++; continue; }
+      if (own(state.edits, id)) { here++; continue; } // your edit in this copy stays
+      const ch = cleanFields(e);
+      if (e.dg) { const dg = cleanDg(e.dg, DIAGRAMS[id]); if (dg) ch.dg = dg; }
+      if (Object.keys(ch).length) { state.edits[id] = ch; thumbs.delete(id); edits++; }
+    }
+    save(); closeSheet();
+    const n = (k, w) => `${k} ${w}${k === 1 ? '' : 's'}`;
+    toast([added || edits ? `Added ${[added && n(added, 'play'), edits && n(edits, 'edit')].filter(Boolean).join(' and ')}.` : 'Nothing new to add.',
+      here ? `${here} ${here === 1 ? 'was' : 'were'} already here.` : '',
+      bad ? `${n(bad, 'item')} could not be read.` : '', noPhoto ? `${n(noPhoto, 'photo')} could not be uploaded.` : ''].filter(Boolean).join(' '));
   }
 
   // ---------- notes ----------
@@ -1245,6 +1326,13 @@
     sheetall: () => { state.sheet.ids = [...new Set([...state.sheet.ids, ...bookAll().filter(ours).map(d => d.id)])]; save(false); paintPlaySheet(); },
     sheetclear: () => { state.sheet.ids = []; save(false); paintPlaySheet(); },
     sheetprint: () => printPlaySheet(),
+    moveplays: () => sheet(moveSheet()),
+    xcopy: () => {
+      const text = JSON.stringify({ app: 'practicebook-plays', v: 1, custom: state.custom, edits: state.edits });
+      const fallback = () => { sheet(`<h2>Copy your plays</h2><p class="muted">Select all and copy, then paste it under Move plays in the other copy of the app.</p><textarea class="field" id="copytext" rows="10" readonly>${esc(text)}</textarea>`); $('#copytext').select(); };
+      try { navigator.clipboard.writeText(text).then(() => toast('Copied. Open the other copy of the app and paste it under Move plays.'), fallback); } catch (e) { fallback(); }
+    },
+    ximport: () => { const t = $('#xin') ? $('#xin').value : ''; if (t.trim()) importPlays(t); else toast('Paste the copied plays first.'); },
     quickadd: el => quickAdd(el.dataset.id),
     level: el => { libLevel = el.dataset.v; repaintLib(el); },
     college: el => { libCollege = !libCollege; repaintLib(el); },
