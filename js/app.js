@@ -52,8 +52,11 @@
   const allDrills = () => DATA.drills.map(withEdits).concat(Object.values(state.custom));
   // the diagram to show: the coach's own (his play, or his edit of ours), else the built-in one
   const diagOf = id => { const d = drill(id); return (d && d.dg) || DIAGRAMS[id] || null; };
-  const PHOTO = /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/; // photos this app made (see addPhoto); nothing else gets shown
-  const photoOk = ph => !!(ph && PHOTO.test(ph.img));
+  // A sheet photo is an uploaded asset in the Claude version (so it syncs; the record only holds its id),
+  // or a data URL this app made, kept on this device. Nothing else gets shown.
+  const PHOTO = /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/, ASSET = /^[A-Za-z0-9_-]{8,64}$/;
+  const photoSrc = ph => !ph ? '' : ph.id && ASSET.test(ph.id) ? '/_blob/' + ph.id : PHOTO.test(ph.img || '') ? ph.img : '';
+  const photoOk = ph => !!photoSrc(ph);
   const BOOK = new Set((DATA.groups.find(g => g.id === 'plays') || { cats: [] }).cats); // playbook categories
   // the Lake program (js/program.js): the "Runs at" ladder is a different idea from drill difficulty, so it never says "level"
   const P = DATA.program, LADDER = P.LADDER, VALUES = P.VALUES, keyOf = P.keyOf;
@@ -475,9 +478,9 @@
     const grp = (title, list, cat) => list.length ? `<section class="group" style="${gc(cat)}"><h2>${esc(title)}</h2><div class="drill-list">${list.map(d => drillCard(d, false, { sheet: true })).join('')}</div></section>` : '';
     const mine = all.filter(ours), off = mine.filter(d => d.cat === 'PL');
     ov.innerHTML = `<div class="overlay-bar"><button class="icon-btn ghost" data-act="closeplaysheet" aria-label="Close">${I.back}</button>
-      <div class="ttl">Play sheet</div><button class="btn primary small" data-act="sheetprint" ${n ? '' : 'disabled'}>Print · ${n}</button></div>
+      <div class="ttl">Play sheet</div><button class="btn primary small" data-act="sheetprint" ${n ? '' : 'disabled'}>${inClaude ? 'Save to print' : 'Print'} · ${n}</button></div>
       <div class="overlay-body">
-        <p class="muted" style="margin:0 0 12px">Tick the plays and defenses the players need to study, then Print. Each one prints with its step-by-step diagrams and coaching points. Your picks are saved.</p>
+        <p class="muted" style="margin:0 0 12px">Tick the plays and defenses the players need to study, then ${inClaude ? 'Save to print: you get a page to open and print' : 'Print'}. Each one prints with its step-by-step diagrams and coaching points. Your picks are saved.</p>
         <label class="lbl">Title on the sheet<input class="field" data-sheettitle value="${esc(state.sheet.title)}" placeholder="${esc(sheetTitle())}" maxlength="60"></label>
         <div class="row" style="gap:8px;margin-top:10px;flex-wrap:wrap"><button class="btn small" data-act="sheetall">Pick all of Our Package</button><button class="btn small" data-act="sheetclear" ${n ? '' : 'disabled'}>Clear</button></div>
         ${P.TYPES.map(t => grp(P.typeLabels[t], off.filter(d => d.type === t), 'PL')).join('')}
@@ -502,7 +505,7 @@
     return `<header class="ps-head"><h1>${esc(sheetTitle())}</h1><p>Lake Flyers · ${esc(teamName(state.team))} · Numbers are offense, X is defense. Each picture is one step: players are where the step starts, arrows show where they go.</p>${LEGEND}</header>
       ${plays.map(d => {
         const dg = diagOf(d.id);
-        const pics = dg ? Court.stills({ ...dg, id: d.id }) : d.sketch ? [sketchStatic(d.sketch)] : photoOk(d.photo) ? [`<img src="${d.photo.img}" alt="">`] : [];
+        const pics = dg ? Court.stills({ ...dg, id: d.id }) : d.sketch ? [sketchStatic(d.sketch)] : photoOk(d.photo) ? [`<img src="${photoSrc(d.photo)}" alt="">`] : [];
         const caps = dg ? dg.s.map(s => s[0]) : [];
         return `<section class="ps-play"><div class="ps-top"><h2>${esc(d.name)}</h2><span>${esc([DATA.cats[d.cat] && d.cat !== 'PL' ? DATA.cats[d.cat] : '', typeName(d)].filter(Boolean).join(' · '))}</span>
           <p><b>Start:</b> ${esc(d.setup || '')}</p></div>
@@ -510,13 +513,27 @@
           ${d.points && d.points.length ? `<ul class="ps-points">${d.points.map(p => `<li>${esc(p)}</li>`).join('')}</ul>` : ''}</section>`;
       }).join('')}`;
   }
-  function printPlaySheet() {
+  // Inside Claude the print dialog is blocked, so there the sheet is saved as a page to open and print.
+  const inClaude = !!(window.claude && window.claude.use);
+  async function printPlaySheet() {
     $('#printsheet') && $('#printsheet').remove();
     const el = document.createElement('div');
     el.id = 'printsheet';
     el.innerHTML = printSheetHtml();
     document.body.appendChild(el);
-    window.print();
+    const dl = inClaude ? await window.claude.use('downloads').catch(() => null) : null;
+    if (!dl) { window.print(); return; }
+    // the print styles apply on screen too in the saved page, so it opens looking like the printout
+    const css = (await fetch('css/app.css').then(r => r.text()).catch(() => '')).replace('@media print {', '@media all {');
+    const doc = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${esc(sheetTitle())}</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@400;500;600;700&family=Kalam:wght@400;700&display=swap">
+<style>${css}\n#printsheet { max-width: 7.5in; margin: 0 auto; padding: 16px; }</style></head><body>${el.outerHTML}</body></html>`;
+    try {
+      await dl.save({ filename: (sheetTitle().replace(/[^A-Za-z0-9 _-]+/g, '').trim() || 'Play Sheet') + '.html', data: doc });
+      toast('Saved. Open the file and print it from there.');
+    } catch (e) {
+      if (!e || e.code !== 'declined') toast('Could not save the sheet here. Print it from the GitHub Pages copy.');
+    }
   }
 
   // ---------- picker overlay ----------
@@ -658,7 +675,7 @@
             ${isProg(d) ? progRow(d) : ''}
           </div>
           ${boardBlock(id)}
-          ${photoOk(d.photo) ? `<section class="block"><h3>Your sheet</h3><img class="sheet-photo" src="${d.photo.img}" alt="Photo of the play sheet for ${esc(d.name)}"></section>` : ''}
+          ${photoOk(d.photo) ? `<section class="block"><h3>Your sheet</h3><img class="sheet-photo" src="${photoSrc(d.photo)}" alt="Photo of the play sheet for ${esc(d.name)}"></section>` : ''}
         </div>
         <div class="right stack">
           ${d.candidate ? block('Offense option', `<p><b>Why it fits Lake:</b> ${esc(d.why || '')}</p><p><b>Best for:</b> ${esc(d.best || '')}</p>`, 'option') : ''}
@@ -1028,27 +1045,37 @@
     if (!box) return;
     const ph = draft.photo;
     box.innerHTML = `<span class="eyebrow" style="margin-top:14px">Photo of your sheet (optional)</span>
-      ${ph ? `<img class="sheet-photo" src="${ph.img}" alt="Your sheet">` : ''}
+      ${ph ? `<img class="sheet-photo" src="${photoSrc(ph)}" alt="Your sheet">` : ''}
       <div class="row" style="gap:8px"><button type="button" class="btn small" data-act="fphoto">${ph ? 'Replace photo' : 'Upload a photo'}</button>${ph ? '<button type="button" class="btn small" data-act="fnophoto">Remove photo</button>' : ''}</div>`;
   }
-  // A phone photo is several MB; shrink it so it fits in the browser's storage (and the account sync).
+  // A phone photo is several MB: shrink it first. In the Claude version it goes to the artifact's file storage,
+  // because the synced record is capped at 256 KB; elsewhere it stays on this device as a data URL.
   async function addPhoto(file) {
     if (file.type && !file.type.startsWith('image/')) { toast('Pick a photo or a picture file.'); return; }
-    const url = URL.createObjectURL(file);
+    const dr = draft, url = URL.createObjectURL(file), c = document.createElement('canvas');
     try {
       const im = new Image();
       im.src = url;
       await im.decode();
-      const k = Math.min(1, 1000 / Math.max(im.naturalWidth, im.naturalHeight)), c = document.createElement('canvas');
+      const k = Math.min(1, 1000 / Math.max(im.naturalWidth, im.naturalHeight));
       c.width = Math.round(im.naturalWidth * k); c.height = Math.round(im.naturalHeight * k);
       const g = c.getContext('2d');
       g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); g.drawImage(im, 0, 0, c.width, c.height);
-      if (!draft) return;
-      draft.photo = { img: c.toDataURL('image/jpeg', 0.6), w: c.width, h: c.height };
-      draft.dirty = true; paintPhoto();
     } catch (err) {
-      toast('Could not read that photo. Try a JPEG or PNG.');
+      toast('Could not read that photo. Try a JPEG or PNG.'); return;
     } finally { URL.revokeObjectURL(url); }
+    const assets = window.claude && window.claude.use ? await window.claude.use('assets').catch(() => null) : null;
+    if (assets) {
+      try {
+        const blob = await new Promise(res => c.toBlob(res, 'image/jpeg', 0.75));
+        const up = await assets.upload(blob, { type: 'image/jpeg' });
+        dr.photo = { id: up.id, w: c.width, h: c.height };
+      } catch (err) {
+        toast(err && err.code === 'quota_or_state' ? 'Photo storage is full. Remove photos from old plays.' : 'Could not upload the photo. Try again.'); return;
+      }
+    } else dr.photo = { img: c.toDataURL('image/jpeg', 0.6), w: c.width, h: c.height };
+    dr.dirty = true;
+    if (draft === dr) paintPhoto();
   }
 
   // ---------- notes ----------

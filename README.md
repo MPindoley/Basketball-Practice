@@ -17,7 +17,7 @@ Open `index.html` in a browser, or host the folder anywhere that serves static f
 
 **GitHub Pages** (free): in the repository go to *Settings → Pages*, set *Source* to *Deploy from a branch*, pick this branch and the `/ (root)` folder, and save. The app appears at `https://<your-user>.github.io/Basketball-Practice/` a minute later. On an iPhone or iPad open that link in Safari, tap *Share → Add to Home Screen*; on Android use Chrome's *Install app*.
 
-Plans, notes and your own drills save in the browser on that device. When the app runs as a claude.ai artifact it also syncs them to your Claude account, so the same plans show up on your phone and computer.
+Plans, notes, your own plays and drills, and your edits save in the browser on that device. When the app runs as a claude.ai artifact it also syncs them to your Claude account, so a play you save on one device shows up on your phone, tablet and computer (open the same Claude link on each; sheet photos go to the artifact's file storage so they sync too). The GitHub Pages copy keeps everything on the device it was made on.
 
 ## Update the drill library
 
